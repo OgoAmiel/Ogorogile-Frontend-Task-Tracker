@@ -1,7 +1,7 @@
 <script setup>
-import Working from './views/Working.vue'
+import CreateTask from './components/CreateTask.vue'
 </script>
 
 <template>
-  <Working />
+  <CreateTask />
 </template>
