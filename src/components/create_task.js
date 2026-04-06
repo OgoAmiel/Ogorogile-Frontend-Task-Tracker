@@ -5,6 +5,7 @@ export default {
     data() {
         return {
             loading: false,
+            loadingTasks: false,
             successMessage: '',
             errorMessage: '',
             tasks: [],
@@ -14,6 +15,9 @@ export default {
                 completed: false
             }
         };
+    },
+    mounted() {
+        this.fetchTasks();
     },
     methods: {
         async createTask() {
@@ -59,6 +63,28 @@ export default {
                 }
             } finally {
                 this.loading = false;
+            }
+        },
+
+        async fetchTasks() {
+            this.loadingTasks = true;
+            this.errorMessage = '';
+
+            try {
+                const response = await axios.get(
+                    `${import.meta.env.VITE_BACKEND_API_URL}/task_management/get_tasks/`
+                );
+
+                if (response.data.status === 'success') {
+                    this.tasks = response.data.data || [];
+                } else {
+                    this.errorMessage = response.data.message || 'Failed to fetch tasks.';
+                }
+            } catch (error) {
+                console.error('Fetch tasks error:', error);
+                this.errorMessage = 'Unable to load tasks.';
+            } finally {
+                this.loadingTasks = false;
             }
         },
 
