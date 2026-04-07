@@ -1,123 +1,218 @@
-<div class="container py-4">
-    <div class="row justify-content-center">
-        <div class="col-lg-8">
-            <!-- Create Task Card -->
-            <div class="card shadow-sm mb-4">
-                <div class="card-body">
-                    <h2 class="fw-bold mb-4">Task Tracker</h2>
-
-                    <div v-if="successMessage" class="alert alert-success">
-                        {{ successMessage }}
+<div class="task-tracker-container">
+    <div class="container py-5">
+        <div class="row justify-content-center">
+            <div class="col-lg-8">
+                <!-- Header -->
+                <div class="text-center mb-5">
+                    <h1 class="display-5 fw-bold mb-2 task-tracker-header">
+                        📋 Task Tracker
+                    </h1>
+                        <p class="text-muted fs-5 task-tracker-subtitle">Organize your work and boost productivity</p>
                     </div>
 
-                    <div v-if="errorMessage" class="alert alert-danger">
-                        {{ errorMessage }}
-                    </div>
+                    <!-- Create Task Card -->
+                    <div class="card shadow-lg border-0 mb-5 create-task-card">
+                        <div class="card-body p-5">
+                            <h3 class="fw-bold mb-4 d-flex align-items-center gap-2">
+                                <span class="icon-lg">✨</span>
+                                Create New Task
+                            </h3>
 
-                    <form @submit.prevent="createTask">
-                        <div class="mb-3">
-                            <label class="form-label fw-semibold">Title</label>
-                            <input
-                                v-model="form.title"
-                                type="text"
-                                class="form-control"
-                                placeholder="Enter task title"
-                                maxlength="200"
-                                required
-                            >
-                        </div>
+                            <form @submit.prevent="createTask">
+                                <div class="mb-4">
+                                    <label class="form-label fw-semibold text-dark">Task Title</label>
+                                    <input
+                                        v-model="form.title"
+                                        type="text"
+                                        class="form-control form-control-lg form-input"
+                                        placeholder="What needs to be done?"
+                                        maxlength="200"
+                                        required
+                                    >
+                                </div>
 
-                        <div class="mb-3">
-                            <label class="form-label fw-semibold">Description</label>
-                            <textarea
-                                v-model="form.description"
-                                class="form-control"
-                                rows="3"
-                                placeholder="Enter task description"
-                            ></textarea>
-                        </div>
+                                <div class="mb-4">
+                                    <label class="form-label fw-semibold text-dark">Description</label>
+                                    <textarea
+                                        v-model="form.description"
+                                        class="form-control form-control-lg form-input"
+                                        rows="3"
+                                        placeholder="Add details..."
+                                    ></textarea>
+                                </div>
 
-                        <div class="form-check mb-3">
-                            <input
-                                v-model="form.completed"
-                                class="form-check-input"
-                                type="checkbox"
-                                id="completedCheck"
-                            >
-                            <label class="form-check-label" for="completedCheck">
-                                Completed
-                            </label>
-                        </div>
+                                <div class="form-check mb-4">
+                                    <input
+                                        v-model="form.completed"
+                                        class="form-check-input form-check-input"
+                                        type="checkbox"
+                                        id="completedCheck"
+                                    >
+                                    <label class="form-check-label fs-5" for="completedCheck">
+                                        Mark as completed
+                                    </label>
+                                </div>
 
-                        <button
-                            type="submit"
-                            class="btn btn-primary"
-                            :disabled="loading"
-                        >
-                            {{ loading ? 'Saving...' : 'Create Task' }}
-                        </button>
-                    </form>
-                </div>
-            </div>
-
-            <!-- Task List Card -->
-            <div class="card shadow-sm">
-                <div class="card-body">
-                    <div class="d-flex justify-content-between align-items-center mb-3">
-                        <h4 class="fw-bold mb-0">My Tasks</h4>
-                        <button
-                            type="button"
-                            class="btn btn-outline-secondary btn-sm"
-                            @click="fetchTasks"
-                        >
-                            Refresh
-                        </button>
-                    </div>
-
-                    <div v-if="loadingTasks" class="text-center py-3">
-                        <div class="spinner-border spinner-border-sm text-primary" role="status">
-                            <span class="visually-hidden">Loading...</span>
+                                <button
+                                    type="submit"
+                                    class="btn btn-lg btn-primary-gradient"
+                                    :disabled="loading"
+                                >
+                                    <span v-if="loading">⏳ Saving...</span>
+                                    <span v-else>➕ Create Task</span>
+                                </button>
+                            </form>
                         </div>
                     </div>
 
-                    <div v-else-if="tasks.length === 0" class="text-muted">
-                        No tasks found yet.
-                    </div>
+                    <!-- Task List Card -->
+                    <div class="card shadow-lg border-0 tasks-list-card">
+                        <div class="card-body p-5">
+                            <div class="d-flex justify-content-between align-items-center mb-4">
+                                <h3 class="fw-bold mb-0 d-flex align-items-center gap-2">
+                                    <span class="icon-lg">📝</span>
+                                    My Tasks
+                                    <span class="badge bg-primary rounded-pill ms-2" v-if="tasks.length > 0">{{ tasks.length }}</span>
+                                </h3>
+                                <button
+                                    type="button"
+                                    class="btn btn-sm btn-refresh"
+                                    @click="fetchTasks"
+                                >
+                                    🔄 Refresh
+                                </button>
+                            </div>
 
-                    <div v-else class="d-grid gap-3">
-                        <div
-                            v-for="task in tasks"
-                            :key="task.id"
-                            class="border rounded p-3"
-                        >
-                            <div class="d-flex justify-content-between align-items-start gap-3">
-                                <div class="flex-grow-1">
-                                    <div class="d-flex align-items-center gap-2 mb-1">
-                                        <h5 class="mb-0">{{ task.title }}</h5>
+                            <div v-if="loadingTasks" class="text-center py-5">
+                                <div class="spinner-border spinner-border-lg text-primary" role="status">
+                                    <span class="visually-hidden">Loading...</span>
+                                </div>
+                                <p class="mt-3 text-muted">Loading your tasks...</p>
+                            </div>
 
-                                        <span
-                                            class="badge"
-                                            :class="task.completed ? 'bg-success' : 'bg-warning text-dark'"
-                                        >
-                                            {{ task.completed ? 'Completed' : 'Pending' }}
-                                        </span>
+                            <div v-else-if="tasks.length === 0" class="text-center py-5 text-muted">
+                                <p class="icon-xl">🎉</p>
+                                <p class="fs-5">No tasks yet! Create one to get started.</p>
+                            </div>
+
+                            <div v-else class="d-grid gap-4">
+                                <div
+                                    v-for="task in tasks"
+                                    :key="task.id"
+                                    class="task-card"
+                                >
+                                    <!-- Edit Form -->
+                                    <div v-if="editingTaskId === task.id">
+                                        <h6 class="mb-4 fw-bold d-flex align-items-center gap-2">
+                                            <span>✏️</span> Edit Task
+                                        </h6>
+
+                                        <div class="mb-3">
+                                            <label class="form-label form-label-sm fw-semibold">Title</label>
+                                            <input
+                                                v-model="editFormData.title"
+                                                type="text"
+                                                class="form-control form-control-sm form-input-sm"
+                                                placeholder="Task title"
+                                                maxlength="200"
+                                            >
+                                        </div>
+
+                                        <div class="mb-3">
+                                            <label class="form-label form-label-sm fw-semibold">Description</label>
+                                            <textarea
+                                                v-model="editFormData.description"
+                                                class="form-control form-control-sm form-input-sm"
+                                                rows="2"
+                                                placeholder="Task description"
+                                            ></textarea>
+                                        </div>
+
+                                        <div class="form-check mb-3">
+                                            <input
+                                                v-model="editFormData.completed"
+                                                class="form-check-input form-check-input-sm"
+                                                type="checkbox"
+                                                :id="`editCompleted-${task.id}`"
+                                            >
+                                            <label class="form-check-label" :for="`editCompleted-${task.id}`">
+                                                Completed
+                                            </label>
+                                        </div>
+
+                                        <div class="d-flex gap-2">
+                                            <button
+                                                type="button"
+                                                class="btn btn-sm btn-success-gradient"
+                                                @click="updateTask"
+                                                :disabled="loading"
+                                            >
+                                                {{ loading ? '⏳ Saving...' : '💾 Save Changes' }}
+                                            </button>
+
+                                            <button
+                                                type="button"
+                                                class="btn btn-sm btn-cancel"
+                                                @click="cancelEditTask"
+                                                :disabled="loading"
+                                            >
+                                                ✕ Cancel
+                                            </button>
+                                        </div>
                                     </div>
 
-                                    <p class="text-muted mb-2">
-                                        {{ task.description || 'No description provided.' }}
-                                    </p>
+                                    <!-- Task Display -->
+                                    <div v-else>
+                                        <div class="d-flex justify-content-between align-items-start gap-3 mb-3">
+                                            <div class="flex-grow-1">
+                                                <div class="d-flex align-items-center gap-2 mb-2">
+                                                    <h5 class="mb-0 task-title" :class="{ completed: task.completed }">
+                                                        {{ task.title }}
+                                                    </h5>
 
-                                    <small class="text-secondary">
-                                        Created at: {{ formatDate(task.created_at) }}
-                                    </small>
+                                                    <span
+                                                        class="badge rounded-pill task-badge"
+                                                        :class="task.completed ? 'bg-success' : 'bg-warning text-dark'"
+                                                    >
+                                                        {{ task.completed ? '✅ Done' : '⏳ Pending' }}
+                                                    </span>
+                                                </div>
+
+                                                <p class="text-muted mb-2 task-description" :class="{ completed: task.completed }">
+                                                    {{ task.description || '📌 No description provided.' }}
+                                                </p>
+
+                                                <small class="text-secondary d-block">
+                                                    📅 {{ formatDate(task.created_at) }}
+                                                </small>
+                                            </div>
+                                        </div>
+
+                                        <div class="d-flex gap-2 pt-3 border-top">
+                                            <button
+                                                type="button"
+                                                class="btn btn-sm btn-edit"
+                                                @click="startEditTask(task)"
+                                                :disabled="loading"
+                                            >
+                                                ✏️ Edit
+                                            </button>
+
+                                            <button
+                                                type="button"
+                                                class="btn btn-sm btn-delete"
+                                                @click="deleteTask(task.id)"
+                                                :disabled="loading"
+                                            >
+                                                🗑️ Delete
+                                            </button>
+                                        </div>
+                                    </div>
                                 </div>
                             </div>
                         </div>
                     </div>
                 </div>
             </div>
-            <!-- End Task List Card -->
-
         </div>
-    </div>
 </div>

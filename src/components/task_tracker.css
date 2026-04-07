@@ -1,0 +1,297 @@
+/* Task Tracker Global Styles */
+
+/* ==================== Variables ==================== */
+:root {
+    --primary-gradient: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    --success-gradient: linear-gradient(135deg, #00d084 0%, #00a860 100%);
+    --primary-color: #667eea;
+    --secondary-color: #764ba2;
+    --success-color: #00d084;
+    --danger-color: #ff6b6b;
+    --light-gradient: linear-gradient(135deg, #f5f7ff 0%, #f0f4ff 100%);
+    --light-bg: #f0f4ff;
+    --light-border: #e9ecef;
+    --border-radius-lg: 20px;
+    --border-radius-md: 15px;
+    --border-radius-sm: 8px;
+    --border-radius-xs: 10px;
+    --transition: all 0.3s ease;
+    --box-shadow-lg: 0 10px 25px rgba(102, 126, 234, 0.15);
+}
+
+/* ==================== Container ==================== */
+.task-tracker-container {
+    background: var(--light-gradient);
+    min-height: 100vh;
+    padding: 0;
+    margin: 0;
+}
+
+/* ==================== Header & Typography ==================== */
+.task-tracker-header {
+    background: var(--primary-gradient);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+}
+
+.task-tracker-subtitle {
+    font-size: 1.25rem;
+}
+
+/* ==================== Cards ==================== */
+.create-task-card,
+.tasks-list-card {
+    border-radius: var(--border-radius-lg);
+    animation: slideInUp 0.5s ease-out;
+}
+
+.task-card {
+    border-radius: var(--border-radius-md);
+    padding: 1.5rem;
+    border: 2px solid var(--light-bg);
+    background: #fff;
+    transition: var(--transition);
+    cursor: pointer;
+    animation: fadeIn 0.3s ease-out;
+}
+
+.task-card:hover {
+    border-color: var(--primary-color);
+    box-shadow: var(--box-shadow-lg);
+}
+
+/* ==================== Forms & Inputs ==================== */
+.form-input,
+.form-control-lg {
+    border-radius: var(--border-radius-xs);
+    border: 2px solid var(--light-border);
+    transition: var(--transition);
+}
+
+.form-input:focus,
+.form-control-lg:focus {
+    border-color: var(--primary-color);
+    box-shadow: 0 0 0 0.2rem rgba(102, 126, 234, 0.25);
+}
+
+.form-input-sm {
+    border-radius: var(--border-radius-sm);
+    border: 2px solid var(--light-border);
+}
+
+.form-check-input {
+    width: 1.3em;
+    height: 1.3em;
+    cursor: pointer;
+}
+
+.form-check-input-sm {
+    width: 1.2em;
+    height: 1.2em;
+}
+
+/* ==================== Buttons ==================== */
+.btn-primary-gradient {
+    border-radius: var(--border-radius-xs);
+    background: var(--primary-gradient);
+    border: none;
+    font-weight: 600;
+    transition: var(--transition);
+    width: 100%;
+}
+
+.btn-primary-gradient:hover:not(:disabled) {
+    transform: translateY(-2px);
+    box-shadow: 0 8px 20px rgba(102, 126, 234, 0.3);
+}
+
+.btn-success-gradient {
+    border-radius: var(--border-radius-sm);
+    background: var(--success-gradient);
+    border: none;
+    color: white;
+    font-weight: 600;
+    transition: var(--transition);
+    flex-grow: 1;
+}
+
+.btn-success-gradient:hover:not(:disabled) {
+    transform: translateY(-2px);
+}
+
+.btn-edit {
+    border-radius: var(--border-radius-sm);
+    background: var(--light-bg);
+    border: 2px solid var(--primary-color);
+    color: var(--primary-color);
+    font-weight: 600;
+    transition: var(--transition);
+    flex-grow: 1;
+}
+
+.btn-edit:hover:not(:disabled) {
+    background: var(--primary-color);
+    color: #fff;
+    transform: translateY(-2px);
+}
+
+.btn-delete {
+    border-radius: var(--border-radius-sm);
+    background: #ffe5e5;
+    border: 2px solid var(--danger-color);
+    color: var(--danger-color);
+    font-weight: 600;
+    transition: var(--transition);
+    flex-grow: 1;
+}
+
+.btn-delete:hover:not(:disabled) {
+    background: var(--danger-color);
+    color: #fff;
+    transform: translateY(-2px);
+}
+
+.btn-cancel {
+    border-radius: var(--border-radius-sm);
+    background: var(--light-bg);
+    border: 2px solid #999;
+    color: #666;
+    font-weight: 600;
+    transition: var(--transition);
+}
+
+.btn-cancel:hover:not(:disabled) {
+    transform: translateY(-2px);
+}
+
+.btn-refresh {
+    border-radius: 20px;
+    background: var(--light-bg);
+    border: 2px solid var(--primary-color);
+    color: var(--primary-color);
+    font-weight: 600;
+    transition: var(--transition);
+}
+
+.btn-refresh:hover:not(:disabled) {
+    background: var(--primary-color);
+    color: #fff;
+    transform: translateY(-2px);
+}
+
+.btn:hover:not(:disabled) {
+    transform: translateY(-2px);
+}
+
+/* ==================== Icons ==================== */
+.icon-lg {
+    font-size: 1.5rem;
+}
+
+.icon-xl {
+    font-size: 3rem;
+}
+
+.icon-md {
+    font-size: 1.2rem;
+}
+
+/* ==================== Task Display ==================== */
+.task-title {
+    transition: var(--transition);
+}
+
+.task-title.completed {
+    text-decoration: line-through;
+    color: #999;
+}
+
+.task-description {
+    transition: var(--transition);
+}
+
+.task-description.completed {
+    color: #bbb;
+}
+
+.task-badge {
+    font-size: 0.85rem;
+    padding: 0.5rem 0.75rem;
+}
+
+/* ==================== Alerts ==================== */
+.alert-icon {
+    font-size: 1.2rem;
+    margin-right: 0.5rem;
+}
+
+/* ==================== Animations ==================== */
+@keyframes slideInUp {
+    from {
+        opacity: 0;
+        transform: translateY(20px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+@keyframes fadeIn {
+    from {
+        opacity: 0;
+    }
+    to {
+        opacity: 1;
+    }
+}
+
+/* ==================== Responsive Design ==================== */
+@media (max-width: 768px) {
+    .create-task-card .card-body,
+    .tasks-list-card .card-body {
+        padding: 2rem !important;
+    }
+
+    h1 {
+        font-size: 2rem !important;
+    }
+
+    .btn-sm {
+        padding: 0.4rem 0.6rem;
+        font-size: 0.85rem;
+    }
+}
+
+/* ==================== Utility Classes ==================== */
+.text-gradient {
+    background: var(--primary-gradient);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+}
+
+.glow-primary {
+    box-shadow: var(--box-shadow-lg);
+}
+
+.rounded-xl {
+    border-radius: var(--border-radius-lg);
+}
+
+.rounded-lg {
+    border-radius: var(--border-radius-md);
+}
+
+.rounded-md {
+    border-radius: var(--border-radius-sm);
+}
+
+.rounded-sm {
+    border-radius: var(--border-radius-xs);
+}
+
+.transition-all {
+    transition: var(--transition);
+}
