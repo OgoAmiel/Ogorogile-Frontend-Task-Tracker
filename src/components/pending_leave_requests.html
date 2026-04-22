@@ -1,0 +1,211 @@
+<div class="leave-portal-root">
+  <aside class="sidebar">
+    <div class="sidebar-brand">
+      <div class="brand-name">LeavePortal</div>
+      <div class="brand-sub">Manager Console</div>
+    </div>
+
+    <nav class="sidebar-nav">
+      <div class="nav-label">Main</div>
+
+      <button
+        class="nav-item-btn"
+        :class="{ active: currentTab === 'pending' }"
+        @click="switchTab('pending')"
+      >
+        <i class="bi bi-hourglass-split"></i> Pending Requests
+      </button>
+
+      <button
+        class="nav-item-btn"
+        :class="{ active: currentTab === 'approved' }"
+        @click="switchTab('approved')"
+      >
+        <i class="bi bi-check2-square"></i> Approved Requests
+      </button>
+
+      <button
+        class="nav-item-btn"
+        :class="{ active: currentTab === 'rejected' }"
+        @click="switchTab('rejected')"
+      >
+        <i class="bi bi-x-circle"></i> Rejected Requests
+      </button>
+    </nav>
+
+    <div class="sidebar-footer">
+      <div class="user-pill">
+        <div class="user-avatar">{{ initials }}</div>
+        <div>
+          <div class="user-name">{{ displayName }}</div>
+          <div class="user-role">{{ displayRole }}</div>
+        </div>
+      </div>
+
+      <button class="nav-item-btn mt-3" @click="logoutUser">
+        <i class="bi bi-box-arrow-right"></i> Logout
+      </button>
+    </div>
+  </aside>
+
+  <main class="main-content">
+    <div class="topbar">
+      <div>
+        <div class="page-title">{{ pageTitle }}</div>
+        <div class="page-subtitle">{{ pageSubtitle }}</div>
+      </div>
+
+      <div class="topbar-actions">
+        <button class="btn-outline-custom" @click="fetchManagedRequests">
+          <i class="bi bi-arrow-clockwise me-1"></i> Refresh
+        </button>
+      </div>
+    </div>
+
+    <div class="content-area">
+      <div class="row g-3 mb-4">
+        <div class="col-12 col-sm-6 col-lg-4">
+          <div class="balance-card">
+            <div class="accent-bar" style="background:#e8622a;"></div>
+            <div class="bc-label">{{ currentTabLabel }}</div>
+            <div class="bc-number" style="color:#e8622a;">{{ requests.length }}</div>
+            <div class="bc-sub">{{ currentTabSubLabel }}</div>
+          </div>
+        </div>
+
+        <div class="col-12 col-sm-6 col-lg-4">
+          <div class="balance-card">
+            <div class="accent-bar" style="background:#2563eb;"></div>
+            <div class="bc-label">Employees Affected</div>
+            <div class="bc-number" style="color:#2563eb;">{{ uniqueEmployeeCount }}</div>
+            <div class="bc-sub">Across displayed requests</div>
+          </div>
+        </div>
+
+        <div class="col-12 col-sm-6 col-lg-4">
+          <div class="balance-card">
+            <div class="accent-bar" style="background:#16a34a;"></div>
+            <div class="bc-label">Total Days</div>
+            <div class="bc-number" style="color:#16a34a;">{{ totalRequestDays }}</div>
+            <div class="bc-sub">Across displayed requests</div>
+          </div>
+        </div>
+      </div>
+
+      <div v-if="errorMessage" class="alert-error mb-3">
+        <i class="bi bi-exclamation-circle-fill" style="flex-shrink:0;"></i>
+        {{ errorMessage }}
+      </div>
+
+      <div v-if="successMessage" class="alert-success-custom mb-3">
+        <i class="bi bi-check-circle-fill" style="font-size:16px;"></i>
+        {{ successMessage }}
+      </div>
+
+      <div class="section-card">
+        <div class="d-flex align-items-center justify-content-between mb-4 flex-wrap gap-2">
+          <div class="section-card-title" style="margin-bottom:0;">
+            {{ currentTabTitle }}
+          </div>
+
+          <div class="d-flex align-items-center gap-2">
+            <select class="form-select" style="width:auto; font-size:13px;" v-model="filterType">
+              <option value="all">All types</option>
+              <option value="annual">Annual</option>
+              <option value="sick">Sick</option>
+              <option value="personal">Family Responsibility</option>
+              <option value="other">Other</option>
+            </select>
+          </div>
+        </div>
+
+        <div v-if="loading" class="empty-state">
+          <div class="spinner-border text-secondary" role="status">
+            <span class="visually-hidden">Loading...</span>
+          </div>
+          <p class="mt-3">Loading leave requests</p>
+        </div>
+
+        <div v-else-if="filteredRequests.length">
+          <div
+            v-for="request in filteredRequests"
+            :key="request.id"
+            class="request-card"
+          >
+            <div class="request-card-top">
+              <div class="request-card-main">
+                <div class="d-flex align-items-center gap-2 flex-wrap mb-2">
+                  <span :class="['type-badge', 'type-' + request.typeKey]">
+                    <span class="type-dot" :style="{ background: typeColor(request.typeKey) }"></span>
+                    {{ request.leave_type.name }}
+                  </span>
+
+                  <span :class="['status-badge', request.status.toLowerCase()]">
+                    <span class="status-dot"></span>
+                    {{ capitalize(request.status.toLowerCase()) }}
+                  </span>
+                </div>
+
+                <div class="employee-name">
+                  {{ formatEmployeeName(request.employee) }}
+                </div>
+
+                <div class="employee-meta">
+                  {{ request.employee.employee_number || 'No employee number' }}
+                  <span class="mx-2">•</span>
+                  {{ request.employee.department || 'No department' }}
+                </div>
+
+                <div class="request-dates mt-2">
+                  <i class="bi bi-calendar3 me-1"></i>
+                  {{ formatDateRange(request.start_date, request.end_date) }}
+                </div>
+
+                <div class="request-days">
+                  <i class="bi bi-clock me-1"></i>
+                  {{ formatDaysLabel(request.days_requested) }}
+                </div>
+
+                <div v-if="request.reason" class="request-reason mt-2">
+                  <strong>Reason:</strong> {{ request.reason }}
+                </div>
+
+                <div
+                  v-if="request.rejection_reason && currentTab === 'rejected'"
+                  class="request-reason mt-2"
+                >
+                  <strong>Rejection Reason:</strong> {{ request.rejection_reason }}
+                </div>
+              </div>
+
+              <div class="request-actions" v-if="currentTab === 'pending'">
+                <button
+                  class="btn-approve"
+                  :disabled="processingRequestId === request.id"
+                  @click="approveRequest(request.id)"
+                >
+                  <span v-if="processingRequestId === request.id && processingAction === 'approve'">Approving...</span>
+                  <span v-else><i class="bi bi-check-lg me-1"></i> Approve</span>
+                </button>
+
+                <button
+                  class="btn-reject"
+                  :disabled="processingRequestId === request.id"
+                  @click="rejectRequest(request.id)"
+                >
+                  <span v-if="processingRequestId === request.id && processingAction === 'reject'">Rejecting...</span>
+                  <span v-else><i class="bi bi-x-lg me-1"></i> Reject</span>
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div v-else class="empty-state">
+          <i class="bi bi-inbox d-block"></i>
+          <p>No {{ currentTab }} leave requests found</p>
+        </div>
+      </div>
+    </div>
+  </main>
+</div>
