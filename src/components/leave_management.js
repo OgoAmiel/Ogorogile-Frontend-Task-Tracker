@@ -23,6 +23,7 @@ export default {
         start_date: '',
         end_date: '',
         reason: '',
+        attachment: null,
       },
 
       computedDays: 0,
@@ -124,6 +125,7 @@ export default {
         status: (request.status || '').toLowerCase(),
         cancellation_reason: request.cancellation_reason || '',
         rejection_reason: request.rejection_reason || '',
+        attachment_url: request.attachment_url || '',
       }))
     },
 
@@ -242,16 +244,25 @@ export default {
       this.submitSuccess = false
 
       try {
+        const formData = new FormData()
+        formData.append('leave_type_id', Number(this.form.leave_type_id))
+        formData.append('start_date', this.form.start_date)
+        formData.append('end_date', this.form.end_date)
+        formData.append('reason', this.form.reason || '')
+
+        if (this.form.attachment) {
+          formData.append('attachment', this.form.attachment)
+        }
+
+        const token = localStorage.getItem('accessToken')
+
         const response = await axios.post(
           `${import.meta.env.VITE_BACKEND_API_URL}/leave_management/create_leave_request/`,
+          formData,
           {
-            leave_type_id: Number(this.form.leave_type_id),
-            start_date: this.form.start_date,
-            end_date: this.form.end_date,
-            reason: this.form.reason,
-          },
-          {
-            headers: this.getAuthHeaders(),
+            headers: {
+              Authorization: `Bearer ${token}`,
+            },
           }
         )
 
@@ -264,7 +275,9 @@ export default {
           start_date: '',
           end_date: '',
           reason: '',
+          attachment: null,
         }
+
         this.computedDays = 0
         this.durationError = ''
 
@@ -288,6 +301,16 @@ export default {
         }
       } finally {
         this.submittingRequest = false
+      }
+    },
+
+    handleAttachmentChange(event) {
+      const files = event.target.files
+
+      if (files && files.length > 0) {
+        this.form.attachment = files[0]
+      } else {
+        this.form.attachment = null
       }
     },
 

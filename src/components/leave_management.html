@@ -1,318 +1,350 @@
- <div class="leave-portal-root">
-    <aside class="sidebar">
-      <div class="sidebar-brand">
-        <div class="brand-name">LeavePortal</div>
-        <div class="brand-sub">Employee Self-Service</div>
-      </div>
+<div class="leave-portal-root">
+  <aside class="sidebar">
+    <div class="sidebar-brand">
+      <div class="brand-name">LeavePortal</div>
+      <div class="brand-sub">Employee Self-Service</div>
+    </div>
 
-      <nav class="sidebar-nav">
-        <div class="nav-label">Main</div>
+    <nav class="sidebar-nav">
+      <div class="nav-label">Main</div>
 
-        <button class="nav-item-btn" :class="{ active: tab === 'overview' }" @click="tab = 'overview'">
-          <i class="bi bi-grid-1x2"></i> Overview
-        </button>
+      <button class="nav-item-btn" :class="{ active: tab === 'overview' }" @click="tab = 'overview'">
+        <i class="bi bi-grid-1x2"></i> Overview
+      </button>
 
-        <button class="nav-item-btn" :class="{ active: tab === 'request' }" @click="tab = 'request'">
-          <i class="bi bi-plus-circle"></i> Request Leave
-        </button>
+      <button class="nav-item-btn" :class="{ active: tab === 'request' }" @click="tab = 'request'">
+        <i class="bi bi-plus-circle"></i> Request Leave
+      </button>
 
-        <button class="nav-item-btn" :class="{ active: tab === 'history' }" @click="tab = 'history'">
-          <i class="bi bi-clock-history"></i> My Requests
-        </button>
+      <button class="nav-item-btn" :class="{ active: tab === 'history' }" @click="tab = 'history'">
+        <i class="bi bi-clock-history"></i> My Requests
+      </button>
 
-        <div class="nav-label" style="margin-top: 12px;">Account</div>
+      <div class="nav-label" style="margin-top: 12px;">Account</div>
 
-        <button class="nav-item-btn">
-          <i class="bi bi-bell"></i> Notifications
-        </button>
+      <button class="nav-item-btn">
+        <i class="bi bi-bell"></i> Notifications
+      </button>
 
-        <button class="nav-item-btn">
-          <i class="bi bi-gear"></i> Settings
-        </button>
-      </nav>
+      <button class="nav-item-btn">
+        <i class="bi bi-gear"></i> Settings
+      </button>
+    </nav>
 
-      <div class="sidebar-footer">
-        <div class="user-pill">
-          <div class="user-avatar">{{ initials }}</div>
-          <div>
-            <div class="user-name">{{ displayName }}</div>
-            <div class="user-role">{{ displayRole }}</div>
-          </div>
-        </div>
-
-        <button class="nav-item-btn mt-3" @click="logoutUser">
-          <i class="bi bi-box-arrow-right"></i> Logout
-        </button>
-      </div>
-    </aside>
-
-    <main class="main-content">
-      <div class="topbar">
+    <div class="sidebar-footer">
+      <div class="user-pill">
+        <div class="user-avatar">{{ initials }}</div>
         <div>
-          <div class="page-title">{{ pageTitle }}</div>
-          <div class="page-subtitle">{{ pageSubtitle }}</div>
-        </div>
-
-        <div class="topbar-actions">
-          <button class="btn-outline-custom" @click="switchToRequestTab">
-            <i class="bi bi-plus me-1"></i> New Request
-          </button>
+          <div class="user-name">{{ displayName }}</div>
+          <div class="user-role">{{ displayRole }}</div>
         </div>
       </div>
 
-      <div class="content-area">
-        <transition name="fade" mode="out-in">
-          <div v-if="tab === 'overview'" key="overview">
-            <div v-if="loadingDashboard" class="section-card text-center py-5">
-              <div class="spinner-border text-secondary" role="status">
-                <span class="visually-hidden">Loading...</span>
+      <button class="nav-item-btn mt-3" @click="logoutUser">
+        <i class="bi bi-box-arrow-right"></i> Logout
+      </button>
+    </div>
+  </aside>
+
+  <main class="main-content">
+    <div class="topbar">
+      <div>
+        <div class="page-title">{{ pageTitle }}</div>
+        <div class="page-subtitle">{{ pageSubtitle }}</div>
+      </div>
+
+      <div class="topbar-actions">
+        <button class="btn-outline-custom" @click="switchToRequestTab">
+          <i class="bi bi-plus me-1"></i> New Request
+        </button>
+      </div>
+    </div>
+
+    <div class="content-area">
+      <transition name="fade" mode="out-in">
+        <div v-if="tab === 'overview'" key="overview">
+          <div v-if="loadingDashboard" class="section-card text-center py-5">
+            <div class="spinner-border text-secondary" role="status">
+              <span class="visually-hidden">Loading...</span>
+            </div>
+            <p class="mt-3 mb-0 text-muted">Loading dashboard...</p>
+          </div>
+
+          <template v-else>
+            <div class="row g-3 mb-4">
+              <div class="col-12 col-sm-6 col-lg-3" v-for="b in balanceCards" :key="b.key">
+                <div class="balance-card">
+                  <div class="accent-bar" :style="{ background: b.color }"></div>
+                  <div class="bc-label">{{ b.label }}</div>
+                  <div class="bc-number" :style="{ color: b.color }">{{ b.remaining }}</div>
+                  <div class="bc-sub">of {{ b.total }} days remaining</div>
+                  <div class="progress-thin">
+                    <div
+                      class="progress-thin-bar"
+                      :style="{ width: usedPercent(b) + '%', background: b.color }"
+                    ></div>
+                  </div>
+                </div>
               </div>
-              <p class="mt-3 mb-0 text-muted">Loading dashboard...</p>
             </div>
 
-            <template v-else>
-              <div class="row g-3 mb-4">
-                <div class="col-12 col-sm-6 col-lg-3" v-for="b in balanceCards" :key="b.key">
-                  <div class="balance-card">
-                    <div class="accent-bar" :style="{ background: b.color }"></div>
-                    <div class="bc-label">{{ b.label }}</div>
-                    <div class="bc-number" :style="{ color: b.color }">{{ b.remaining }}</div>
-                    <div class="bc-sub">of {{ b.total }} days remaining</div>
-                    <div class="progress-thin">
-                      <div
-                        class="progress-thin-bar"
-                        :style="{ width: usedPercent(b) + '%', background: b.color }"
-                      ></div>
-                    </div>
-                  </div>
-                </div>
-              </div>
-
-              <div class="row g-3 mb-4">
-                <div class="col-12 col-lg-7">
-                  <div class="section-card">
-                    <div class="section-card-title">Upcoming Approved Leave</div>
-
-                    <div v-if="upcomingLeave.length">
-                      <div v-for="r in upcomingLeave" :key="r.id" class="request-row">
-                        <span :class="['type-badge', 'type-' + r.typeKey]">
-                          <span class="type-dot" :style="{ background: typeColor(r.typeKey) }"></span>
-                          {{ r.type }}
-                        </span>
-
-                        <div class="request-row-info">
-                          <div class="request-row-dates">{{ formatDateRange(r.start, r.end) }}</div>
-                        </div>
-
-                        <span class="status-badge approved">
-                          <span class="status-dot"></span> Approved
-                        </span>
-                      </div>
-                    </div>
-
-                    <div v-else class="empty-state">
-                      <i class="bi bi-calendar-check d-block"></i>
-                      <p>No upcoming approved leave</p>
-                    </div>
-                  </div>
-                </div>
-
-                <div class="col-12 col-lg-5">
-                  <div class="section-card">
-                    <div class="section-card-title">Quick Actions</div>
-
-                    <div class="d-flex flex-column gap-2">
-                      <button class="quick-action" @click="switchToRequestTab">
-                        <div class="qa-icon"><i class="bi bi-plus-lg"></i></div>
-                        <div>
-                          <div class="qa-label">Request Leave</div>
-                          <div class="qa-sub">Submit a new leave request</div>
-                        </div>
-                      </button>
-
-                      <button class="quick-action" @click="tab = 'history'">
-                        <div class="qa-icon"><i class="bi bi-clock-history"></i></div>
-                        <div>
-                          <div class="qa-label">View History</div>
-                          <div class="qa-sub">Track all your requests</div>
-                        </div>
-                      </button>
-                    </div>
-                  </div>
-                </div>
-              </div>
-
-              <div class="section-card">
-                <div class="section-card-title">Leave Usage This Year</div>
-
-                <div class="row g-4">
-                  <div class="col-12 col-md-4" v-for="b in balanceCards.slice(0, 3)" :key="b.key + '-usage'">
-                    <div class="d-flex justify-content-between align-items-baseline mb-2">
-                      <span style="font-size: 13px; font-weight: 500; color: var(--brand-text);">
-                        {{ b.label }}
-                      </span>
-                      <span style="font-size: 12px; font-family: 'DM Mono', monospace; color: var(--brand-muted);">
-                        {{ b.used }}/{{ b.total }}
-                      </span>
-                    </div>
-
-                    <div class="progress-thin">
-                      <div
-                        class="progress-thin-bar"
-                        :style="{ width: usedPercent(b) + '%', background: b.color }"
-                      ></div>
-                    </div>
-
-                    <div style="font-size: 12px; color: var(--brand-muted); margin-top: 6px;">
-                      {{ b.remaining }} days remaining
-                    </div>
-                  </div>
-                </div>
-              </div>
-            </template>
-          </div>
-
-          <div v-else-if="tab === 'request'" key="request">
-            <div class="row justify-content-center">
+            <div class="row g-3 mb-4">
               <div class="col-12 col-lg-7">
-                <transition name="fade">
-                  <div v-if="submitSuccess" class="alert-success-custom mb-3">
-                    <i class="bi bi-check-circle-fill" style="font-size: 16px;"></i>
-                    Your leave request has been submitted successfully and is pending approval.
-                  </div>
-                </transition>
-
-                <transition name="fade">
-                  <div v-if="formError" class="alert-error mb-3">
-                    <i class="bi bi-exclamation-circle-fill" style="flex-shrink: 0;"></i>
-                    {{ formError }}
-                  </div>
-                </transition>
-
                 <div class="section-card">
-                  <div class="section-card-title">New Leave Request</div>
+                  <div class="section-card-title">Upcoming Approved Leave</div>
 
-                  <div class="mb-3">
-                    <label class="form-label">Leave Type</label>
-                    <select class="form-select" v-model="form.leave_type_id">
-                      <option value="" disabled>Select leave type</option>
-                      <option
-                        v-for="type in leaveTypeOptions"
-                        :key="type.id"
-                        :value="type.id"
-                      >
-                        {{ type.name }}
-                      </option>
-                    </select>
-                  </div>
+                  <div v-if="upcomingLeave.length">
+                    <div v-for="r in upcomingLeave" :key="r.id" class="request-row">
+                      <span :class="['type-badge', 'type-' + r.typeKey]">
+                        <span class="type-dot" :style="{ background: typeColor(r.typeKey) }"></span>
+                        {{ r.type }}
+                      </span>
 
-                  <div class="row g-3 mb-3">
-                    <div class="col-6">
-                      <label class="form-label">Start Date</label>
-                      <input type="date" class="form-control" v-model="form.start_date" @change="computeDuration" />
-                    </div>
+                      <div class="request-row-info">
+                        <div class="request-row-dates">{{ formatDateRange(r.start, r.end) }}</div>
+                      </div>
 
-                    <div class="col-6">
-                      <label class="form-label">End Date</label>
-                      <input type="date" class="form-control" v-model="form.end_date" @change="computeDuration" />
+                      <span class="status-badge approved">
+                        <span class="status-dot"></span> Approved
+                      </span>
                     </div>
                   </div>
 
-                  <div class="mb-3" v-if="form.start_date && form.end_date">
-                    <label class="form-label">Duration</label><br>
-                    <span class="duration-pill">
-                      <i class="bi bi-calendar2-week" style="font-size: 12px;"></i>
-                      {{ computedDurationLabel }}
-                    </span>
-                    <span v-if="durationError" style="font-size: 13px; color: #dc2626; margin-left: 12px;">
-                      {{ durationError }}
-                    </span>
+                  <div v-else class="empty-state">
+                    <i class="bi bi-calendar-check d-block"></i>
+                    <p>No upcoming approved leave</p>
                   </div>
+                </div>
+              </div>
 
-                  <div class="mb-4">
-                    <label class="form-label">Reason <span style="font-weight: 400; color: var(--brand-muted);">(optional)</span></label>
-                    <textarea
-                      class="form-control"
-                      rows="3"
-                      placeholder="Briefly describe the reason for your leave..."
-                      v-model="form.reason"
-                    ></textarea>
-                  </div>
+              <div class="col-12 col-lg-5">
+                <div class="section-card">
+                  <div class="section-card-title">Quick Actions</div>
 
-                  <div class="d-flex align-items-center justify-content-between flex-wrap gap-2">
-                    <p style="font-size: 13px; color: var(--brand-muted);">
-                      <i class="bi bi-info-circle me-1"></i>
-                      Requests are reviewed within 2 business days.
-                    </p>
+                  <div class="d-flex flex-column gap-2">
+                    <button class="quick-action" @click="switchToRequestTab">
+                      <div class="qa-icon"><i class="bi bi-plus-lg"></i></div>
+                      <div>
+                        <div class="qa-label">Request Leave</div>
+                        <div class="qa-sub">Submit a new leave request</div>
+                      </div>
+                    </button>
 
-                    <button class="btn-primary-custom" @click="submitRequest" :disabled="!canSubmit || submittingRequest">
-                      <i class="bi bi-send me-1"></i>
-                      <span v-if="submittingRequest">Submitting...</span>
-                      <span v-else>Submit Request</span>
+                    <button class="quick-action" @click="tab = 'history'">
+                      <div class="qa-icon"><i class="bi bi-clock-history"></i></div>
+                      <div>
+                        <div class="qa-label">View History</div>
+                        <div class="qa-sub">Track all your requests</div>
+                      </div>
                     </button>
                   </div>
                 </div>
               </div>
             </div>
-          </div>
 
-          <div v-else-if="tab === 'history'" key="history">
             <div class="section-card">
-              <div class="d-flex align-items-center justify-content-between mb-4 flex-wrap gap-2">
-                <div class="section-card-title" style="margin-bottom: 0;">All Leave Requests</div>
+              <div class="section-card-title">Leave Usage This Year</div>
 
-                <div class="d-flex align-items-center gap-2">
-                  <select class="form-select" style="width: auto; font-size: 13px;" v-model="filterStatus">
-                    <option value="all">All statuses</option>
-                    <option value="pending">Pending</option>
-                    <option value="approved">Approved</option>
-                    <option value="rejected">Rejected</option>
-                    <option value="cancelled">Cancelled</option>
-                  </select>
+              <div class="row g-4">
+                <div class="col-12 col-md-4" v-for="b in balanceCards.slice(0, 3)" :key="b.key + '-usage'">
+                  <div class="d-flex justify-content-between align-items-baseline mb-2">
+                    <span style="font-size: 13px; font-weight: 500; color: var(--brand-text);">
+                      {{ b.label }}
+                    </span>
+                    <span style="font-size: 12px; font-family: 'DM Mono', monospace; color: var(--brand-muted);">
+                      {{ b.used }}/{{ b.total }}
+                    </span>
+                  </div>
 
-                  <select class="form-select" style="width: auto; font-size: 13px;" v-model="filterType">
-                    <option value="all">All types</option>
-                    <option v-for="type in leaveTypeFilterOptions" :key="type.key" :value="type.key">
+                  <div class="progress-thin">
+                    <div
+                      class="progress-thin-bar"
+                      :style="{ width: usedPercent(b) + '%', background: b.color }"
+                    ></div>
+                  </div>
+
+                  <div style="font-size: 12px; color: var(--brand-muted); margin-top: 6px;">
+                    {{ b.remaining }} days remaining
+                  </div>
+                </div>
+              </div>
+            </div>
+          </template>
+        </div>
+
+        <div v-else-if="tab === 'request'" key="request">
+          <div class="row justify-content-center">
+            <div class="col-12 col-lg-7">
+              <transition name="fade">
+                <div v-if="submitSuccess" class="alert-success-custom mb-3">
+                  <i class="bi bi-check-circle-fill" style="font-size: 16px;"></i>
+                  Your leave request has been submitted successfully and is pending approval.
+                </div>
+              </transition>
+
+              <transition name="fade">
+                <div v-if="formError" class="alert-error mb-3">
+                  <i class="bi bi-exclamation-circle-fill" style="flex-shrink: 0;"></i>
+                  {{ formError }}
+                </div>
+              </transition>
+
+              <div class="section-card">
+                <div class="section-card-title">New Leave Request</div>
+
+                <div class="mb-3">
+                  <label class="form-label">Leave Type</label>
+                  <select class="form-select" v-model="form.leave_type_id">
+                    <option value="" disabled>Select leave type</option>
+                    <option
+                      v-for="type in leaveTypeOptions"
+                      :key="type.id"
+                      :value="type.id"
+                    >
                       {{ type.name }}
                     </option>
                   </select>
                 </div>
-              </div>
 
-              <div v-if="filteredRequests.length">
-                <div v-for="r in filteredRequests" :key="r.id" class="request-row">
-                  <span :class="['type-badge', 'type-' + r.typeKey]" style="min-width: 140px;">
-                    <span class="type-dot" :style="{ background: typeColor(r.typeKey) }"></span>
-                    {{ r.type }}
-                  </span>
-
-                  <div class="request-row-info">
-                    <div class="request-row-dates">{{ formatDateRange(r.start, r.end) }}</div>
-                    <div class="request-row-days">{{ formatDaysLabel(r.days) }}</div>
+                <div class="row g-3 mb-3">
+                  <div class="col-6">
+                    <label class="form-label">Start Date</label>
+                    <input type="date" class="form-control" v-model="form.start_date" @change="computeDuration" />
                   </div>
 
-                  <span :class="['status-badge', r.status]">
-                    <span class="status-dot"></span>
-                    {{ capitalize(r.status) }}
-                  </span>
+                  <div class="col-6">
+                    <label class="form-label">End Date</label>
+                    <input type="date" class="form-control" v-model="form.end_date" @change="computeDuration" />
+                  </div>
+                </div>
 
-                  <button
-                    v-if="r.status === 'pending' || r.status === 'approved'"
-                    class="btn-outline-custom btn-sm"
-                    @click="cancelRequest(r)"
-                  >
-                    Cancel
+                <div class="mb-3" v-if="form.start_date && form.end_date">
+                  <label class="form-label">Duration</label><br>
+                  <span class="duration-pill">
+                    <i class="bi bi-calendar2-week" style="font-size: 12px;"></i>
+                    {{ computedDurationLabel }}
+                  </span>
+                  <span v-if="durationError" style="font-size: 13px; color: #dc2626; margin-left: 12px;">
+                    {{ durationError }}
+                  </span>
+                </div>
+
+                <div class="mb-4">
+                  <label class="form-label">
+                    Reason
+                    <span style="font-weight: 400; color: var(--brand-muted);">(optional)</span>
+                  </label>
+                  <textarea
+                    class="form-control"
+                    rows="3"
+                    placeholder="Briefly describe the reason for your leave..."
+                    v-model="form.reason"
+                  ></textarea>
+                </div>
+
+                <div class="mb-4">
+                  <label class="form-label">
+                    Supporting Document
+                    <span style="font-weight: 400; color: var(--brand-muted);">(optional unless required)</span>
+                  </label>
+
+                  <input
+                    type="file"
+                    class="form-control"
+                    accept=".pdf,.jpg,.jpeg,.png"
+                    @change="handleAttachmentChange"
+                  />
+
+                  <small style="font-size: 12px; color: var(--brand-muted);">
+                    Upload a supporting document such as a doctor's note where required.
+                  </small>
+                </div>
+
+                <div class="d-flex align-items-center justify-content-between flex-wrap gap-2">
+                  <p style="font-size: 13px; color: var(--brand-muted);">
+                    <i class="bi bi-info-circle me-1"></i>
+                    Requests are reviewed within 2 business days.
+                  </p>
+
+                  <button class="btn-primary-custom" @click="submitRequest" :disabled="!canSubmit || submittingRequest">
+                    <i class="bi bi-send me-1"></i>
+                    <span v-if="submittingRequest">Submitting...</span>
+                    <span v-else>Submit Request</span>
                   </button>
                 </div>
               </div>
-
-              <div v-else class="empty-state">
-                <i class="bi bi-inbox d-block"></i>
-                <p>No requests match your filters</p>
-              </div>
             </div>
           </div>
-        </transition>
-      </div>
-    </main>
-  </div>
+        </div>
+
+        <div v-else-if="tab === 'history'" key="history">
+          <div class="section-card">
+            <div class="d-flex align-items-center justify-content-between mb-4 flex-wrap gap-2">
+              <div class="section-card-title" style="margin-bottom: 0;">All Leave Requests</div>
+
+              <div class="d-flex align-items-center gap-2">
+                <select class="form-select" style="width: auto; font-size: 13px;" v-model="filterStatus">
+                  <option value="all">All statuses</option>
+                  <option value="pending">Pending</option>
+                  <option value="approved">Approved</option>
+                  <option value="rejected">Rejected</option>
+                  <option value="cancelled">Cancelled</option>
+                </select>
+
+                <select class="form-select" style="width: auto; font-size: 13px;" v-model="filterType">
+                  <option value="all">All types</option>
+                  <option v-for="type in leaveTypeFilterOptions" :key="type.key" :value="type.key">
+                    {{ type.name }}
+                  </option>
+                </select>
+              </div>
+            </div>
+
+            <div v-if="filteredRequests.length">
+              <div v-for="r in filteredRequests" :key="r.id" class="request-row">
+                <span :class="['type-badge', 'type-' + r.typeKey]" style="min-width: 140px;">
+                  <span class="type-dot" :style="{ background: typeColor(r.typeKey) }"></span>
+                  {{ r.type }}
+                </span>
+
+                <div class="request-row-info">
+                  <div class="request-row-dates">{{ formatDateRange(r.start, r.end) }}</div>
+                  <div class="request-row-days">{{ formatDaysLabel(r.days) }}</div>
+
+                  <div v-if="r.attachment_url" class="mt-2">
+                    <a
+                      :href="r.attachment_url"
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      class="btn btn-sm btn-outline-primary"
+                    >
+                      View Document
+                    </a>
+                  </div>
+                </div>
+
+                <span :class="['status-badge', r.status]">
+                  <span class="status-dot"></span>
+                  {{ capitalize(r.status) }}
+                </span>
+
+                <button
+                  v-if="r.status === 'pending' || r.status === 'approved'"
+                  class="btn-outline-custom btn-sm"
+                  @click="cancelRequest(r)"
+                >
+                  Cancel
+                </button>
+              </div>
+            </div>
+
+            <div v-else class="empty-state">
+              <i class="bi bi-inbox d-block"></i>
+              <p>No requests match your filters</p>
+            </div>
+          </div>
+        </div>
+      </transition>
+    </div>
+  </main>
+</div>

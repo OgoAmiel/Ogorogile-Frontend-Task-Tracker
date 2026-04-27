@@ -176,6 +176,28 @@
                 >
                   <strong>Rejection Reason:</strong> {{ request.rejection_reason }}
                 </div>
+
+                <div v-if="request.attachment_url || request.attachment" class="request-reason mt-2">
+                    <strong>Supporting Document:</strong>
+                    <div class="d-flex gap-2 mt-2 flex-wrap">
+                        <button
+                            type="button"
+                            class="btn btn-sm btn-outline-primary"
+                            @click="previewAttachment(request.attachment_url || request.attachment)"
+                            >Preview
+                        </button>
+
+                        <a
+                            :href="normalizeAttachmentUrl(request.attachment_url || request.attachment)"
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            class="btn btn-sm btn-outline-secondary"
+                            download
+                            >
+                            Download
+                        </a>
+                    </div>
+                </div>
               </div>
 
               <div class="request-actions" v-if="currentTab === 'pending'">
@@ -208,4 +230,34 @@
       </div>
     </div>
   </main>
+
+  <div v-if="showPreviewModal" class="preview-overlay" @click="closePreview">
+    <div class="preview-modal" @click.stop>
+      <div class="preview-header">
+        <h5 class="mb-0">Document Preview</h5>
+        <button type="button" class="btn-close" @click="closePreview"></button>
+      </div>
+
+      <div class="preview-body">
+        <img
+            v-if="previewType === 'image'"
+            :src="previewUrl"
+            alt="Attachment preview"
+            class="preview-image"
+        />
+
+        <div v-else class="text-center py-4">
+            <p class="mb-3">This file opens in a new tab for preview.</p>
+            <a
+                :href="previewUrl"
+                target="_blank"
+                rel="noopener noreferrer"
+                class="btn btn-outline-primary"
+                download
+                >Download Document
+            </a>
+        </div>
+    </div>
+</div>
+</div>
 </div>

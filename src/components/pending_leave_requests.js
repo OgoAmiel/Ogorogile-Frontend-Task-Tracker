@@ -15,6 +15,9 @@ export default {
       processingRequestId: null,
       processingAction: '',
       currentTab: 'pending',
+      showPreviewModal: false,
+      previewUrl: '',
+      previewType: '',
     }
   },
 
@@ -122,6 +125,25 @@ export default {
       }
 
       return 'get_pending_leave_requests/'
+    },
+
+    normalizeAttachmentUrl(url) {
+      if (!url) {
+        return ''
+      }
+
+      if (url.startsWith('http://') || url.startsWith('https://')) {
+        return url
+      }
+
+      const backendBaseUrl = import.meta.env.VITE_BACKEND_API_URL || ''
+      const backendOrigin = backendBaseUrl.replace(/\/api\/?$/, '')
+
+      if (url.startsWith('/')) {
+        return `${backendOrigin}${url}`
+      }
+
+      return `${backendOrigin}/${url}`
     },
 
     async fetchCurrentUser() {
@@ -259,6 +281,39 @@ export default {
         this.processingRequestId = null
         this.processingAction = ''
       }
+    },
+
+    previewAttachment(url) {
+      if (!url) {
+        return
+      }
+
+      const normalizedUrl = this.normalizeAttachmentUrl(url)
+      const cleanUrl = normalizedUrl.split('?')[0].toLowerCase()
+
+      if (cleanUrl.endsWith('.pdf')) {
+        window.open(normalizedUrl, '_blank', 'noopener,noreferrer')
+        return
+      }
+
+      if (
+        cleanUrl.endsWith('.jpg') ||
+        cleanUrl.endsWith('.jpeg') ||
+        cleanUrl.endsWith('.png')
+      ) {
+        this.previewType = 'image'
+        this.previewUrl = normalizedUrl
+        this.showPreviewModal = true
+        return
+      }
+
+      window.open(normalizedUrl, '_blank', 'noopener,noreferrer')
+    },
+
+    closePreview() {
+      this.showPreviewModal = false
+      this.previewUrl = ''
+      this.previewType = ''
     },
 
     logoutUser() {
