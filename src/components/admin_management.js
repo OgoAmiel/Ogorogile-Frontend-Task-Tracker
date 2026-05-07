@@ -17,6 +17,8 @@ export default {
       leaveTypeSubmitting: false,
       deleteSubmitting: false,
       deletingUserId: null,
+      leaveTypeDeleteSubmitting: false,
+      deletingLeaveTypeId: null,
 
       errorMessage: '',
       successMessage: '',
@@ -663,6 +665,59 @@ export default {
     closeLeaveTypeModal() {
       this.isLeaveTypeModalOpen = false
       this.errorMessage = ''
+    },
+
+    async deleteLeaveType(leaveType) {
+      if (this.leaveTypeDeleteSubmitting) {
+        return
+      }
+
+      const confirmed = window.confirm(
+        `Are you sure you want to delete "${leaveType.name}"? This action cannot be undone.`
+      )
+
+      if (!confirmed) {
+        return
+      }
+
+      this.leaveTypeDeleteSubmitting = true
+      this.deletingLeaveTypeId = leaveType.id
+      this.errorMessage = ''
+      this.successMessage = ''
+
+      try {
+        const response = await axios.post(
+          `${import.meta.env.VITE_BACKEND_API_URL}/leave_management/delete_leave_type/`,
+          { leave_type_id: leaveType.id },
+          {
+            headers: this.getAuthHeaders(),
+          }
+        )
+
+        if (response.data.status === 'success') {
+          this.successMessage = response.data.message || 'Leave type deleted successfully.'
+          await this.fetchLeaveTypes()
+        } else {
+          this.errorMessage = response.data.message || 'Failed to delete leave type.'
+        }
+      } catch (error) {
+        console.error('Delete leave type error:', error)
+
+        const message = error?.response?.data?.message
+
+        if (typeof message === 'string') {
+          this.errorMessage = message
+        } else if (Array.isArray(message)) {
+          this.errorMessage = message.join(' ')
+        } else if (typeof message === 'object' && message !== null) {
+          this.errorMessage = Object.values(message).flat().join(' ')
+        } else {
+          this.errorMessage = 'Unable to delete leave type.'
+        }
+      } finally {
+        this.leaveTypeDeleteSubmitting = false
+        this.deletingLeaveTypeId = null
+      }
     },
 
     logoutUser() {
