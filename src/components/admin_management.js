@@ -8,15 +8,26 @@ export default {
     return {
       currentTab: 'users',
       user: null,
+
       users: [],
+      leaveTypes: [],
+
       loading: true,
       submitting: false,
+      leaveTypeSubmitting: false,
+
       errorMessage: '',
       successMessage: '',
+
       searchTerm: '',
       roleFilter: 'all',
+
       formMode: 'create',
+      leaveTypeFormMode: 'create',
+
       isUserModalOpen: false,
+      isLeaveTypeModalOpen: false,
+
       userForm: {
         user_id: null,
         username: '',
@@ -28,6 +39,14 @@ export default {
         employee_number: '',
         department: '',
         manager_id: '',
+      },
+
+      leaveTypeForm: {
+        leave_type_id: null,
+        name: '',
+        default_days: '',
+        requires_attachment: false,
+        is_active: true,
       },
     }
   },
@@ -53,10 +72,18 @@ export default {
     },
 
     pageTitle() {
+      if (this.currentTab === 'leave_types') {
+        return 'Admin Leave Types'
+      }
+
       return 'Admin User Management'
     },
 
     pageSubtitle() {
+      if (this.currentTab === 'leave_types') {
+        return 'Create and manage leave types'
+      }
+
       return 'Create, update, and manage system users'
     },
 
@@ -70,6 +97,18 @@ export default {
 
     totalManagers() {
       return this.users.filter((userItem) => userItem.role === 'MANAGER').length
+    },
+
+    totalLeaveTypes() {
+      return this.leaveTypes.length
+    },
+
+    activeLeaveTypes() {
+      return this.leaveTypes.filter((leaveType) => leaveType.is_active).length
+    },
+
+    attachmentRequiredLeaveTypes() {
+      return this.leaveTypes.filter((leaveType) => leaveType.requires_attachment).length
     },
 
     filteredUsers() {
@@ -139,6 +178,18 @@ export default {
       }
     },
 
+    async switchTab(tab) {
+      this.currentTab = tab
+      this.errorMessage = ''
+      this.successMessage = ''
+
+      if (tab === 'leave_types') {
+        await this.fetchLeaveTypes()
+      } else {
+        await this.fetchUsers()
+      }
+    },
+
     async fetchCurrentUser() {
       try {
         const response = await axios.get(
@@ -183,6 +234,40 @@ export default {
           this.errorMessage = message.join(' ')
         } else {
           this.errorMessage = 'Unable to load users.'
+        }
+      } finally {
+        this.loading = false
+      }
+    },
+
+    async fetchLeaveTypes() {
+      this.loading = true
+      this.errorMessage = ''
+
+      try {
+        const response = await axios.get(
+          `${import.meta.env.VITE_BACKEND_API_URL}/leave_management/get_leave_types/`,
+          {
+            headers: this.getAuthHeaders(),
+          }
+        )
+
+        if (response.data.status === 'success') {
+          this.leaveTypes = response.data.data || []
+        } else {
+          this.errorMessage = response.data.message || 'Failed to load leave types.'
+        }
+      } catch (error) {
+        console.error('Fetch leave types error:', error)
+
+        const message = error?.response?.data?.message
+
+        if (typeof message === 'string') {
+          this.errorMessage = message
+        } else if (Array.isArray(message)) {
+          this.errorMessage = message.join(' ')
+        } else {
+          this.errorMessage = 'Unable to load leave types.'
         }
       } finally {
         this.loading = false
@@ -300,29 +385,25 @@ export default {
     async createUser() {
       const payload = this.buildCreatePayload()
 
-      const response = await axios.post(
+      return axios.post(
         `${import.meta.env.VITE_BACKEND_API_URL}/user_management/create_user/`,
         payload,
         {
           headers: this.getAuthHeaders(),
         }
       )
-
-      return response
     },
 
     async updateUser() {
       const payload = this.buildUpdatePayload()
 
-      const response = await axios.post(
+      return axios.post(
         `${import.meta.env.VITE_BACKEND_API_URL}/user_management/update_user/`,
         payload,
         {
           headers: this.getAuthHeaders(),
         }
       )
-
-      return response
     },
 
     async submitUserForm() {
@@ -380,6 +461,152 @@ export default {
 
     closeUserModal() {
       this.isUserModalOpen = false
+      this.errorMessage = ''
+    },
+
+    openCreateLeaveTypeForm() {
+      this.leaveTypeFormMode = 'create'
+      this.errorMessage = ''
+      this.successMessage = ''
+      this.resetLeaveTypeForm()
+      this.isLeaveTypeModalOpen = true
+    },
+
+    openEditLeaveTypeForm(leaveType) {
+      this.leaveTypeFormMode = 'edit'
+      this.errorMessage = ''
+      this.successMessage = ''
+      this.isLeaveTypeModalOpen = true
+
+      this.leaveTypeForm = {
+        leave_type_id: leaveType.id,
+        name: leaveType.name || '',
+        default_days: leaveType.default_days || '',
+        requires_attachment: !!leaveType.requires_attachment,
+        is_active: !!leaveType.is_active,
+      }
+    },
+
+    resetLeaveTypeForm() {
+      this.leaveTypeForm = {
+        leave_type_id: null,
+        name: '',
+        default_days: '',
+        requires_attachment: false,
+        is_active: true,
+      }
+    },
+
+    validateLeaveTypeForm() {
+      if (!this.leaveTypeForm.name.trim()) {
+        return 'Leave type name is required.'
+      }
+
+      if (this.leaveTypeForm.default_days === '' || this.leaveTypeForm.default_days === null) {
+        return 'Default days is required.'
+      }
+
+      return ''
+    },
+
+    buildCreateLeaveTypePayload() {
+      return {
+        name: this.leaveTypeForm.name.trim(),
+        default_days: this.leaveTypeForm.default_days,
+        requires_attachment: this.leaveTypeForm.requires_attachment,
+        is_active: this.leaveTypeForm.is_active,
+      }
+    },
+
+    buildUpdateLeaveTypePayload() {
+      return {
+        leave_type_id: this.leaveTypeForm.leave_type_id,
+        name: this.leaveTypeForm.name.trim(),
+        default_days: this.leaveTypeForm.default_days,
+        requires_attachment: this.leaveTypeForm.requires_attachment,
+        is_active: this.leaveTypeForm.is_active,
+      }
+    },
+
+    async createLeaveType() {
+      const payload = this.buildCreateLeaveTypePayload()
+
+      return axios.post(
+        `${import.meta.env.VITE_BACKEND_API_URL}/leave_management/create_leave_type/`,
+        payload,
+        {
+          headers: this.getAuthHeaders(),
+        }
+      )
+    },
+
+    async updateLeaveType() {
+      const payload = this.buildUpdateLeaveTypePayload()
+
+      return axios.post(
+        `${import.meta.env.VITE_BACKEND_API_URL}/leave_management/update_leave_type/`,
+        payload,
+        {
+          headers: this.getAuthHeaders(),
+        }
+      )
+    },
+
+    async submitLeaveTypeForm() {
+      if (this.leaveTypeSubmitting) {
+        return
+      }
+
+      const validationMessage = this.validateLeaveTypeForm()
+
+      if (validationMessage) {
+        this.errorMessage = validationMessage
+        this.successMessage = ''
+        return
+      }
+
+      this.leaveTypeSubmitting = true
+      this.errorMessage = ''
+      this.successMessage = ''
+
+      try {
+        const response = this.leaveTypeFormMode === 'create'
+          ? await this.createLeaveType()
+          : await this.updateLeaveType()
+
+        if (response.data.status === 'success') {
+          this.successMessage = response.data.message || 'Leave type saved successfully.'
+          await this.fetchLeaveTypes()
+
+          if (this.leaveTypeFormMode === 'create') {
+            this.resetLeaveTypeForm()
+          }
+
+          this.closeLeaveTypeModal()
+        } else {
+          this.errorMessage = response.data.message || 'Failed to save leave type.'
+        }
+      } catch (error) {
+        console.error('Submit leave type form error:', error)
+
+        const message = error?.response?.data?.message
+
+        if (typeof message === 'string') {
+          this.errorMessage = message
+        } else if (Array.isArray(message)) {
+          this.errorMessage = message.join(' ')
+        } else if (typeof message === 'object' && message !== null) {
+          this.errorMessage = Object.values(message).flat().join(' ')
+        } else {
+          this.errorMessage = 'Unable to save leave type.'
+        }
+      } finally {
+        this.leaveTypeSubmitting = false
+      }
+    },
+
+    closeLeaveTypeModal() {
+      this.isLeaveTypeModalOpen = false
       this.errorMessage = ''
     },
 
