@@ -16,7 +16,11 @@
         <i class="bi bi-people"></i> User Management
       </button>
 
-      <button class="nav-item-btn" disabled>
+      <button
+        class="nav-item-btn"
+        :class="{ active: currentTab === 'leave_requests' }"
+        @click="switchTab('leave_requests')"
+      >
         <i class="bi bi-card-checklist"></i> Leave Requests
       </button>
 
@@ -28,7 +32,11 @@
         <i class="bi bi-calendar2-week"></i> Leave Types
       </button>
 
-      <button class="nav-item-btn" disabled>
+      <button
+        class="nav-item-btn"
+        :class="{ active: currentTab === 'leave_balances' }"
+        @click="switchTab('leave_balances')"
+      >
         <i class="bi bi-wallet2"></i> Leave Balances
       </button>
     </nav>
@@ -70,6 +78,18 @@
         </button>
         <button class="btn-outline-custom" @click="openCreateLeaveTypeForm">
           <i class="bi bi-plus-lg me-1"></i> New Leave Type
+        </button>
+      </div>
+
+      <div class="topbar-actions" v-else-if="currentTab === 'leave_requests'">
+        <button class="btn-outline-custom" @click="fetchAllLeaveRequests">
+          <i class="bi bi-arrow-clockwise me-1"></i> Refresh
+        </button>
+      </div>
+
+      <div class="topbar-actions" v-else-if="currentTab === 'leave_balances'">
+        <button class="btn-outline-custom" @click="fetchLeaveBalances">
+          <i class="bi bi-arrow-clockwise me-1"></i> Refresh
         </button>
       </div>
     </div>
@@ -220,6 +240,175 @@
         </div>
       </template>
 
+      <template v-else-if="currentTab === 'leave_requests'">
+        <div class="row g-3 mb-4">
+          <div class="col-12 col-sm-6 col-lg-3">
+            <div class="balance-card">
+              <div class="accent-bar" style="background:#e8622a;"></div>
+              <div class="bc-label">Total Requests</div>
+              <div class="bc-number" style="color:#e8622a;">{{ totalCompanyRequests }}</div>
+              <div class="bc-sub">Across the company</div>
+            </div>
+          </div>
+
+          <div class="col-12 col-sm-6 col-lg-3">
+            <div class="balance-card">
+              <div class="accent-bar" style="background:#b45309;"></div>
+              <div class="bc-label">Pending</div>
+              <div class="bc-number" style="color:#b45309;">{{ totalPendingRequests }}</div>
+              <div class="bc-sub">Awaiting action</div>
+            </div>
+          </div>
+
+          <div class="col-12 col-sm-6 col-lg-3">
+            <div class="balance-card">
+              <div class="accent-bar" style="background:#16a34a;"></div>
+              <div class="bc-label">Approved</div>
+              <div class="bc-number" style="color:#16a34a;">{{ totalApprovedRequests }}</div>
+              <div class="bc-sub">Already approved</div>
+            </div>
+          </div>
+
+          <div class="col-12 col-sm-6 col-lg-3">
+            <div class="balance-card">
+              <div class="accent-bar" style="background:#dc2626;"></div>
+              <div class="bc-label">Rejected</div>
+              <div class="bc-number" style="color:#dc2626;">{{ totalRejectedRequests }}</div>
+              <div class="bc-sub">Already rejected</div>
+            </div>
+          </div>
+        </div>
+
+        <div v-if="errorMessage" class="alert-error mb-3">
+          <i class="bi bi-exclamation-circle-fill" style="flex-shrink:0;"></i>
+          {{ errorMessage }}
+        </div>
+
+        <div v-if="successMessage" class="alert-success-custom mb-3">
+          <i class="bi bi-check-circle-fill" style="font-size:16px;"></i>
+          {{ successMessage }}
+        </div>
+
+        <div class="row g-4">
+          <div class="col-12">
+            <div class="section-card">
+              <div class="d-flex align-items-center justify-content-between mb-4 flex-wrap gap-2">
+                <div class="section-card-title" style="margin-bottom:0;">All Company Leave Requests</div>
+
+                <div class="d-flex align-items-center gap-2 flex-wrap">
+                  <input
+                    v-model="requestSearchTerm"
+                    type="text"
+                    class="form-control"
+                    style="width:220px;"
+                    placeholder="Search requests..."
+                  />
+
+                  <select class="form-select" style="width:auto; font-size:13px;" v-model="requestStatusFilter">
+                    <option value="all">All statuses</option>
+                    <option value="pending">Pending</option>
+                    <option value="approved">Approved</option>
+                    <option value="rejected">Rejected</option>
+                    <option value="cancelled">Cancelled</option>
+                  </select>
+
+                  <select class="form-select" style="width:auto; font-size:13px;" v-model="requestTypeFilter">
+                    <option value="all">All types</option>
+                    <option
+                      v-for="type in requestTypeOptions"
+                      :key="type.key"
+                      :value="type.key"
+                    >
+                      {{ type.name }}
+                    </option>
+                  </select>
+                </div>
+              </div>
+
+              <div v-if="loading" class="empty-state">
+                <div class="spinner-border text-secondary" role="status">
+                  <span class="visually-hidden">Loading...</span>
+                </div>
+                <p class="mt-3">Loading leave requests</p>
+              </div>
+
+              <div v-else-if="filteredLeaveRequests.length">
+                <div
+                  v-for="request in filteredLeaveRequests"
+                  :key="request.id"
+                  class="request-card"
+                >
+                  <div class="request-card-top">
+                    <div class="request-card-main">
+                      <div class="d-flex align-items-center gap-2 flex-wrap mb-2">
+                        <span class="type-badge type-other">
+                          <span class="type-dot" style="background:#64748b;"></span>
+                          {{ request.leave_type?.name || 'Leave Type' }}
+                        </span>
+
+                        <span :class="['status-badge', getRequestStatusBadgeClass(request.status)]">
+                          <span class="status-dot"></span>
+                          {{ capitalize((request.status || '').toLowerCase()) }}
+                        </span>
+                      </div>
+
+                      <div class="employee-name">
+                        {{ formatEmployeeName(request.employee) }}
+                      </div>
+
+                      <div class="employee-meta">
+                        {{ request.employee?.username || 'No username' }}
+                        <span class="mx-2">•</span>
+                        {{ request.employee?.department || 'No department' }}
+                      </div>
+
+                      <div class="request-dates mt-2">
+                        <i class="bi bi-calendar3 me-1"></i>
+                        {{ formatDateRange(request.start_date, request.end_date) }}
+                      </div>
+
+                      <div class="request-days">
+                        <i class="bi bi-clock me-1"></i>
+                        {{ formatDaysLabel(request.days_requested) }}
+                      </div>
+
+                      <div v-if="request.reason" class="request-reason mt-2">
+                        <strong>Reason:</strong> {{ request.reason }}
+                      </div>
+
+                      <div v-if="request.rejection_reason" class="request-reason mt-2">
+                        <strong>Rejection Reason:</strong> {{ request.rejection_reason }}
+                      </div>
+
+                      <div v-if="request.cancellation_reason" class="request-reason mt-2">
+                        <strong>Cancellation Reason:</strong> {{ request.cancellation_reason }}
+                      </div>
+
+                      <div v-if="request.attachment_url || request.attachment" class="request-reason mt-2">
+                        <strong>Supporting Document:</strong>
+                        <a
+                          :href="normalizeAttachmentUrl(request.attachment_url || request.attachment)"
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          class="btn btn-sm btn-outline-primary ms-2"
+                        >
+                          View Document
+                        </a>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <div v-else class="empty-state">
+                <i class="bi bi-inbox d-block"></i>
+                <p>No leave requests match your filters</p>
+              </div>
+            </div>
+          </div>
+        </div>
+      </template>
+
       <template v-else-if="currentTab === 'leave_types'">
         <div class="row g-3 mb-4">
           <div class="col-12 col-sm-6 col-lg-4">
@@ -329,6 +518,151 @@
               <div v-else class="empty-state">
                 <i class="bi bi-inbox d-block"></i>
                 <p>No leave types found</p>
+              </div>
+            </div>
+          </div>
+        </div>
+      </template>
+
+      <template v-else-if="currentTab === 'leave_balances'">
+        <div class="row g-3 mb-4">
+          <div class="col-12 col-sm-6 col-lg-3">
+            <div class="balance-card">
+              <div class="accent-bar" style="background:#e8622a;"></div>
+              <div class="bc-label">Balance Records</div>
+              <div class="bc-number" style="color:#e8622a;">{{ totalBalanceRecords }}</div>
+              <div class="bc-sub">Across the company</div>
+            </div>
+          </div>
+
+          <div class="col-12 col-sm-6 col-lg-3">
+            <div class="balance-card">
+              <div class="accent-bar" style="background:#2563eb;"></div>
+              <div class="bc-label">Allocated Days</div>
+              <div class="bc-number" style="color:#2563eb;">{{ totalAllocatedDays }}</div>
+              <div class="bc-sub">Total across balances</div>
+            </div>
+          </div>
+
+          <div class="col-12 col-sm-6 col-lg-3">
+            <div class="balance-card">
+              <div class="accent-bar" style="background:#b45309;"></div>
+              <div class="bc-label">Used Days</div>
+              <div class="bc-number" style="color:#b45309;">{{ totalUsedDays }}</div>
+              <div class="bc-sub">Already consumed</div>
+            </div>
+          </div>
+
+          <div class="col-12 col-sm-6 col-lg-3">
+            <div class="balance-card">
+              <div class="accent-bar" style="background:#16a34a;"></div>
+              <div class="bc-label">Remaining Days</div>
+              <div class="bc-number" style="color:#16a34a;">{{ totalRemainingDays }}</div>
+              <div class="bc-sub">Still available</div>
+            </div>
+          </div>
+        </div>
+
+        <div v-if="errorMessage" class="alert-error mb-3">
+          <i class="bi bi-exclamation-circle-fill" style="flex-shrink:0;"></i>
+          {{ errorMessage }}
+        </div>
+
+        <div v-if="successMessage" class="alert-success-custom mb-3">
+          <i class="bi bi-check-circle-fill" style="font-size:16px;"></i>
+          {{ successMessage }}
+        </div>
+
+        <div class="row g-4">
+          <div class="col-12">
+            <div class="section-card">
+              <div class="d-flex align-items-center justify-content-between mb-4 flex-wrap gap-2">
+                <div class="section-card-title" style="margin-bottom:0;">Company Leave Balances</div>
+
+                <div class="d-flex align-items-center gap-2 flex-wrap">
+                  <input
+                    v-model="balanceSearchTerm"
+                    type="text"
+                    class="form-control"
+                    style="width:220px;"
+                    placeholder="Search balances..."
+                  />
+
+                  <select class="form-select" style="width:auto; font-size:13px;" v-model="balanceTypeFilter">
+                    <option value="all">All types</option>
+                    <option
+                      v-for="type in balanceTypeOptions"
+                      :key="type.key"
+                      :value="type.key"
+                    >
+                      {{ type.name }}
+                    </option>
+                  </select>
+                </div>
+              </div>
+
+              <div v-if="loading" class="empty-state">
+                <div class="spinner-border text-secondary" role="status">
+                  <span class="visually-hidden">Loading...</span>
+                </div>
+                <p class="mt-3">Loading leave balances</p>
+              </div>
+
+              <div v-else-if="filteredLeaveBalances.length">
+                <div
+                  v-for="balance in filteredLeaveBalances"
+                  :key="balance.id"
+                  class="request-card"
+                >
+                  <div class="request-card-top">
+                    <div class="request-card-main">
+                      <div class="d-flex align-items-center gap-2 flex-wrap mb-2">
+                        <span class="type-badge type-other">
+                          <span class="type-dot" style="background:#64748b;"></span>
+                          {{ balance.leave_type_name }}
+                        </span>
+                      </div>
+
+                      <div class="employee-name">
+                        {{ formatEmployeeName(balance.employee) }}
+                      </div>
+
+                      <div class="employee-meta">
+                        {{ balance.employee?.username || 'No username' }}
+                        <span class="mx-2">•</span>
+                        {{ balance.employee?.department || 'No department' }}
+                      </div>
+
+                      <div class="request-dates mt-2">
+                        <i class="bi bi-calendar-check me-1"></i>
+                        Total Days: {{ balance.total_days }}
+                      </div>
+
+                      <div class="request-days">
+                        <i class="bi bi-clock-history me-1"></i>
+                        Used Days: {{ balance.used_days }}
+                      </div>
+
+                      <div class="request-reason mt-2">
+                        <strong>Remaining Days:</strong> {{ balance.remaining_days }}
+                      </div>
+                    </div>
+
+                    <div class="request-actions">
+                      <button
+                        class="btn-outline-custom"
+                        @click="openEditBalanceModal(balance)"
+                      >
+                        <i class="bi bi-pencil-square me-1"></i> Edit Total
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <div v-else class="empty-state">
+                <i class="bi bi-inbox d-block"></i>
+                <p>No leave balances match your filters</p>
               </div>
             </div>
           </div>
@@ -521,6 +855,45 @@
             <span v-else>
               {{ leaveTypeFormMode === 'create' ? 'Create Leave Type' : 'Update Leave Type' }}
             </span>
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <div v-if="isBalanceModalOpen" class="modal-backdrop" @click.self="closeBalanceModal">
+      <div class="modal-window">
+        <div class="modal-header">
+          <div class="modal-title">Update Leave Balance</div>
+          <button class="modal-close" type="button" @click="closeBalanceModal">
+            <i class="bi bi-x-lg"></i>
+          </button>
+        </div>
+
+        <div class="modal-body">
+          <div class="mb-3">
+            <label class="form-label">Total Days</label>
+            <input
+              v-model="balanceForm.total_days"
+              type="number"
+              step="0.1"
+              min="0"
+              class="form-control"
+              placeholder="Enter total days"
+            />
+          </div>
+
+          <div class="alert alert-light mb-0" style="font-size:13px;">
+            Only total days can be adjusted here. Used days remain system-controlled.
+          </div>
+        </div>
+
+        <div class="modal-footer">
+          <button class="btn-outline-custom" type="button" @click="closeBalanceModal">
+            Cancel
+          </button>
+          <button class="btn-approve" :disabled="balanceSubmitting" type="button" @click="submitBalanceForm">
+            <span v-if="balanceSubmitting">Updating...</span>
+            <span v-else>Update Balance</span>
           </button>
         </div>
       </div>

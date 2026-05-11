@@ -11,10 +11,13 @@ export default {
 
       users: [],
       leaveTypes: [],
+      leaveRequests: [],
+      leaveBalances: [],
 
       loading: true,
       submitting: false,
       leaveTypeSubmitting: false,
+      balanceSubmitting: false,
       deleteSubmitting: false,
       deletingUserId: null,
       leaveTypeDeleteSubmitting: false,
@@ -26,11 +29,19 @@ export default {
       searchTerm: '',
       roleFilter: 'all',
 
+      requestSearchTerm: '',
+      requestStatusFilter: 'all',
+      requestTypeFilter: 'all',
+
+      balanceSearchTerm: '',
+      balanceTypeFilter: 'all',
+
       formMode: 'create',
       leaveTypeFormMode: 'create',
 
       isUserModalOpen: false,
       isLeaveTypeModalOpen: false,
+      isBalanceModalOpen: false,
 
       userForm: {
         user_id: null,
@@ -51,6 +62,11 @@ export default {
         default_days: '',
         requires_attachment: false,
         is_active: true,
+      },
+
+      balanceForm: {
+        leave_balance_id: null,
+        total_days: '',
       },
     }
   },
@@ -80,12 +96,28 @@ export default {
         return 'Admin Leave Types'
       }
 
+      if (this.currentTab === 'leave_requests') {
+        return 'Company Leave Requests'
+      }
+
+      if (this.currentTab === 'leave_balances') {
+        return 'Company Leave Balances'
+      }
+
       return 'Admin User Management'
     },
 
     pageSubtitle() {
       if (this.currentTab === 'leave_types') {
         return 'Create and manage leave types'
+      }
+
+      if (this.currentTab === 'leave_requests') {
+        return 'View all leave requests across the company'
+      }
+
+      if (this.currentTab === 'leave_balances') {
+        return 'View and adjust employee leave balances'
       }
 
       return 'Create, update, and manage system users'
@@ -113,6 +145,38 @@ export default {
 
     attachmentRequiredLeaveTypes() {
       return this.leaveTypes.filter((leaveType) => leaveType.requires_attachment).length
+    },
+
+    totalCompanyRequests() {
+      return this.leaveRequests.length
+    },
+
+    totalPendingRequests() {
+      return this.leaveRequests.filter((request) => (request.status || '').toLowerCase() === 'pending').length
+    },
+
+    totalApprovedRequests() {
+      return this.leaveRequests.filter((request) => (request.status || '').toLowerCase() === 'approved').length
+    },
+
+    totalRejectedRequests() {
+      return this.leaveRequests.filter((request) => (request.status || '').toLowerCase() === 'rejected').length
+    },
+
+    totalBalanceRecords() {
+      return this.leaveBalances.length
+    },
+
+    totalAllocatedDays() {
+      return this.leaveBalances.reduce((sum, balance) => sum + Number(balance.total_days || 0), 0)
+    },
+
+    totalUsedDays() {
+      return this.leaveBalances.reduce((sum, balance) => sum + Number(balance.used_days || 0), 0)
+    },
+
+    totalRemainingDays() {
+      return this.leaveBalances.reduce((sum, balance) => sum + Number(balance.remaining_days || 0), 0)
     },
 
     filteredUsers() {
@@ -146,6 +210,96 @@ export default {
         }
 
         return true
+      })
+    },
+
+    requestTypeOptions() {
+      const options = []
+
+      this.leaveRequests.forEach((request) => {
+        const name = request.leave_type?.name || ''
+        const key = this.mapLeaveTypeNameToKey(name)
+
+        const exists = options.some((item) => item.key === key)
+        if (!exists && key) {
+          options.push({
+            key,
+            name,
+          })
+        }
+      })
+
+      return options
+    },
+
+    filteredLeaveRequests() {
+      return this.leaveRequests.filter((request) => {
+        const employeeName = this.formatEmployeeName(request.employee).toLowerCase()
+        const leaveTypeName = (request.leave_type?.name || '').toLowerCase()
+        const reason = (request.reason || '').toLowerCase()
+        const department = (request.employee?.department || '').toLowerCase()
+        const searchValue = this.requestSearchTerm.trim().toLowerCase()
+        const status = (request.status || '').toLowerCase()
+        const typeKey = this.mapLeaveTypeNameToKey(request.leave_type?.name || '')
+
+        const matchesSearch =
+          !searchValue ||
+          employeeName.includes(searchValue) ||
+          leaveTypeName.includes(searchValue) ||
+          reason.includes(searchValue) ||
+          department.includes(searchValue) ||
+          (request.employee?.username || '').toLowerCase().includes(searchValue)
+
+        const matchesStatus =
+          this.requestStatusFilter === 'all' || status === this.requestStatusFilter
+
+        const matchesType =
+          this.requestTypeFilter === 'all' || typeKey === this.requestTypeFilter
+
+        return matchesSearch && matchesStatus && matchesType
+      })
+    },
+
+    balanceTypeOptions() {
+      const options = []
+
+      this.leaveBalances.forEach((balance) => {
+        const name = balance.leave_type_name || ''
+        const key = this.mapLeaveTypeNameToKey(name)
+
+        const exists = options.some((item) => item.key === key)
+        if (!exists && key) {
+          options.push({
+            key,
+            name,
+          })
+        }
+      })
+
+      return options
+    },
+
+    filteredLeaveBalances() {
+      return this.leaveBalances.filter((balance) => {
+        const employeeName = this.formatEmployeeName(balance.employee).toLowerCase()
+        const leaveTypeName = (balance.leave_type_name || '').toLowerCase()
+        const department = (balance.employee?.department || '').toLowerCase()
+        const username = (balance.employee?.username || '').toLowerCase()
+        const searchValue = this.balanceSearchTerm.trim().toLowerCase()
+        const typeKey = this.mapLeaveTypeNameToKey(balance.leave_type_name || '')
+
+        const matchesSearch =
+          !searchValue ||
+          employeeName.includes(searchValue) ||
+          leaveTypeName.includes(searchValue) ||
+          department.includes(searchValue) ||
+          username.includes(searchValue) ||
+          (balance.employee?.employee_number || '').toLowerCase().includes(searchValue)
+
+        const matchesType =
+          this.balanceTypeFilter === 'all' || typeKey === this.balanceTypeFilter
+
+        return matchesSearch && matchesType
       })
     },
   },
@@ -189,6 +343,10 @@ export default {
 
       if (tab === 'leave_types') {
         await this.fetchLeaveTypes()
+      } else if (tab === 'leave_requests') {
+        await this.fetchAllLeaveRequests()
+      } else if (tab === 'leave_balances') {
+        await this.fetchLeaveBalances()
       } else {
         await this.fetchUsers()
       }
@@ -272,6 +430,74 @@ export default {
           this.errorMessage = message.join(' ')
         } else {
           this.errorMessage = 'Unable to load leave types.'
+        }
+      } finally {
+        this.loading = false
+      }
+    },
+
+    async fetchAllLeaveRequests() {
+      this.loading = true
+      this.errorMessage = ''
+
+      try {
+        const response = await axios.get(
+          `${import.meta.env.VITE_BACKEND_API_URL}/leave_management/get_all_leave_requests/`,
+          {
+            headers: this.getAuthHeaders(),
+          }
+        )
+
+        if (response.data.status === 'success') {
+          this.leaveRequests = response.data.data || []
+        } else {
+          this.errorMessage = response.data.message || 'Failed to load leave requests.'
+        }
+      } catch (error) {
+        console.error('Fetch all leave requests error:', error)
+
+        const message = error?.response?.data?.message
+
+        if (typeof message === 'string') {
+          this.errorMessage = message
+        } else if (Array.isArray(message)) {
+          this.errorMessage = message.join(' ')
+        } else {
+          this.errorMessage = 'Unable to load leave requests.'
+        }
+      } finally {
+        this.loading = false
+      }
+    },
+
+    async fetchLeaveBalances() {
+      this.loading = true
+      this.errorMessage = ''
+
+      try {
+        const response = await axios.get(
+          `${import.meta.env.VITE_BACKEND_API_URL}/leave_management/get_all_leave_balances/`,
+          {
+            headers: this.getAuthHeaders(),
+          }
+        )
+
+        if (response.data.status === 'success') {
+          this.leaveBalances = response.data.data || []
+        } else {
+          this.errorMessage = response.data.message || 'Failed to load leave balances.'
+        }
+      } catch (error) {
+        console.error('Fetch leave balances error:', error)
+
+        const message = error?.response?.data?.message
+
+        if (typeof message === 'string') {
+          this.errorMessage = message
+        } else if (Array.isArray(message)) {
+          this.errorMessage = message.join(' ')
+        } else {
+          this.errorMessage = 'Unable to load leave balances.'
         }
       } finally {
         this.loading = false
@@ -718,6 +944,167 @@ export default {
         this.leaveTypeDeleteSubmitting = false
         this.deletingLeaveTypeId = null
       }
+    },
+
+    openEditBalanceModal(balance) {
+      this.errorMessage = ''
+      this.successMessage = ''
+      this.isBalanceModalOpen = true
+
+      this.balanceForm = {
+        leave_balance_id: balance.id,
+        total_days: balance.total_days,
+      }
+    },
+
+    closeBalanceModal() {
+      this.isBalanceModalOpen = false
+      this.errorMessage = ''
+    },
+
+    resetBalanceForm() {
+      this.balanceForm = {
+        leave_balance_id: null,
+        total_days: '',
+      }
+    },
+
+    validateBalanceForm() {
+      if (this.balanceForm.total_days === '' || this.balanceForm.total_days === null) {
+        return 'Total days is required.'
+      }
+
+      return ''
+    },
+
+    buildUpdateBalancePayload() {
+      return {
+        leave_balance_id: this.balanceForm.leave_balance_id,
+        total_days: this.balanceForm.total_days,
+      }
+    },
+
+    async updateLeaveBalance() {
+      const payload = this.buildUpdateBalancePayload()
+
+      return axios.post(
+        `${import.meta.env.VITE_BACKEND_API_URL}/leave_management/update_leave_balance/`,
+        payload,
+        {
+          headers: this.getAuthHeaders(),
+        }
+      )
+    },
+
+    async submitBalanceForm() {
+      if (this.balanceSubmitting) {
+        return
+      }
+
+      const validationMessage = this.validateBalanceForm()
+
+      if (validationMessage) {
+        this.errorMessage = validationMessage
+        this.successMessage = ''
+        return
+      }
+
+      this.balanceSubmitting = true
+      this.errorMessage = ''
+      this.successMessage = ''
+
+      try {
+        const response = await this.updateLeaveBalance()
+
+        if (response.data.status === 'success') {
+          this.successMessage = response.data.message || 'Leave balance updated successfully.'
+          await this.fetchLeaveBalances()
+          this.closeBalanceModal()
+        } else {
+          this.errorMessage = response.data.message || 'Failed to update leave balance.'
+        }
+      } catch (error) {
+        console.error('Update leave balance error:', error)
+
+        const message = error?.response?.data?.message
+
+        if (typeof message === 'string') {
+          this.errorMessage = message
+        } else if (Array.isArray(message)) {
+          this.errorMessage = message.join(' ')
+        } else if (typeof message === 'object' && message !== null) {
+          this.errorMessage = Object.values(message).flat().join(' ')
+        } else {
+          this.errorMessage = 'Unable to update leave balance.'
+        }
+      } finally {
+        this.balanceSubmitting = false
+      }
+    },
+
+    formatEmployeeName(employee) {
+      if (!employee) return 'Unknown Employee'
+      const fullName = `${employee.first_name || ''} ${employee.last_name || ''}`.trim()
+      return fullName || employee.username || 'Unknown Employee'
+    },
+
+    formatDateRange(start, end) {
+      const format = (dateString) =>
+        new Date(`${dateString}T00:00:00`).toLocaleDateString('en-GB', {
+          day: 'numeric',
+          month: 'short',
+          year: 'numeric',
+        })
+
+      return start === end ? format(start) : `${format(start)} – ${format(end)}`
+    },
+
+    formatDaysLabel(days) {
+      const value = Number(days)
+      return value === 1 ? '1 day' : `${value} days`
+    },
+
+    mapLeaveTypeNameToKey(name) {
+      const value = (name || '').toLowerCase()
+
+      if (value.includes('annual')) return 'annual'
+      if (value.includes('sick')) return 'sick'
+      if (value.includes('family')) return 'personal'
+      if (value.includes('personal')) return 'personal'
+      return 'other'
+    },
+
+    normalizeAttachmentUrl(url) {
+      if (!url) {
+        return ''
+      }
+
+      if (url.startsWith('http://') || url.startsWith('https://')) {
+        return url
+      }
+
+      const backendBaseUrl = import.meta.env.VITE_BACKEND_API_URL || ''
+      const backendOrigin = backendBaseUrl.replace(/\/api\/?$/, '')
+
+      if (url.startsWith('/')) {
+        return `${backendOrigin}${url}`
+      }
+
+      return `${backendOrigin}/${url}`
+    },
+
+    getRequestStatusBadgeClass(status) {
+      const value = (status || '').toLowerCase()
+
+      if (value === 'approved') {
+        return 'approved'
+      }
+
+      if (value === 'rejected') {
+        return 'rejected'
+      }
+
+      return 'pending'
     },
 
     logoutUser() {
