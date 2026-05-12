@@ -811,8 +811,14 @@
               v-model="leaveTypeForm.name"
               type="text"
               class="form-control"
+              :class="{ 'is-invalid': leaveTypeErrors.name }"
               placeholder="Enter leave type name"
+              @input="clearLeaveTypeError('name')"
             />
+
+            <div v-if="leaveTypeErrors.name" class="invalid-feedback">
+              {{ leaveTypeErrors.name }}
+            </div>
           </div>
 
           <div class="mb-3">
@@ -823,8 +829,13 @@
               step="0.1"
               min="0"
               class="form-control"
+              :class="{ 'is-invalid': leaveTypeErrors.default_days }"
               placeholder="Enter default days"
+              @input="clearLeaveTypeError('default_days')"
             />
+            <div v-if="leaveTypeErrors.default_days" class="invalid-feedback">
+              {{ leaveTypeErrors.default_days }}
+            </div>
           </div>
 
           <div class="mb-3">

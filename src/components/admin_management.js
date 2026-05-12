@@ -64,6 +64,11 @@ export default {
         is_active: true,
       },
 
+      leaveTypeErrors: {
+        name: '',
+        default_days: '',
+      },
+
       balanceForm: {
         leave_balance_id: null,
         total_days: '',
@@ -752,6 +757,7 @@ export default {
       this.errorMessage = ''
       this.successMessage = ''
       this.resetLeaveTypeForm()
+      this.resetLeaveTypeErrors()
       this.isLeaveTypeModalOpen = true
     },
 
@@ -759,6 +765,7 @@ export default {
       this.leaveTypeFormMode = 'edit'
       this.errorMessage = ''
       this.successMessage = ''
+      this.resetLeaveTypeErrors()
       this.isLeaveTypeModalOpen = true
 
       this.leaveTypeForm = {
@@ -778,18 +785,56 @@ export default {
         requires_attachment: false,
         is_active: true,
       }
+      this.resetLeaveTypeErrors()
     },
 
     validateLeaveTypeForm() {
-      if (!this.leaveTypeForm.name.trim()) {
-        return 'Leave type name is required.'
+      this.resetLeaveTypeErrors()
+
+      let isValid = true
+      const name = this.leaveTypeForm.name.trim()
+      const defaultDays = this.leaveTypeForm.default_days
+
+      if (!name) {
+        this.leaveTypeErrors.name = 'Leave type name is required.'
+        isValid = false
       }
 
-      if (this.leaveTypeForm.default_days === '' || this.leaveTypeForm.default_days === null) {
-        return 'Default days is required.'
+      if (defaultDays === '' || defaultDays === null) {
+        this.leaveTypeErrors.default_days = 'Default days is required.'
+        isValid = false
+      } else if (Number(defaultDays) < 0) {
+        this.leaveTypeErrors.default_days = 'Default days cannot be negative.'
+        isValid = false
       }
 
-      return ''
+      const duplicateLeaveType = this.leaveTypes.find((leaveType) => {
+        const existingName = (leaveType.name || '').trim().toLowerCase()
+        const submittedName = name.toLowerCase()
+
+        if (this.leaveTypeFormMode === 'edit' && leaveType.id === this.leaveTypeForm.leave_type_id) {
+          return false
+        }
+        return existingName === submittedName
+      })
+
+      if (duplicateLeaveType) {
+        this.leaveTypeErrors.name = 'A leave type with this name already exists.'
+        isValid = false
+      }
+      return isValid
+    },
+
+    resetLeaveTypeErrors() {
+      this.leaveTypeErrors = {
+        name: '',
+        default_days: '',
+      }
+    },
+
+    clearLeaveTypeError(fieldName) {
+      this.leaveTypeErrors[fieldName] = ''
+      this.errorMessage = ''
     },
 
     buildCreateLeaveTypePayload() {
@@ -840,10 +885,9 @@ export default {
         return
       }
 
-      const validationMessage = this.validateLeaveTypeForm()
+      const isValid = this.validateLeaveTypeForm()
 
-      if (validationMessage) {
-        this.errorMessage = validationMessage
+      if (!isValid) {
         this.successMessage = ''
         return
       }
@@ -875,14 +919,30 @@ export default {
         const message = error?.response?.data?.message
 
         if (typeof message === 'string') {
-          this.errorMessage = message
-        } else if (Array.isArray(message)) {
-          this.errorMessage = message.join(' ')
+          if (message.toLowerCase().includes('leave type with this name already exists')) {
+            this.leaveTypeErrors.name = message
+          } else if (message.toLowerCase().includes('default days')) {
+            this.leaveTypeErrors.default_days = message
+          } else {
+            this.errorMessage = message
+          }
         } else if (typeof message === 'object' && message !== null) {
-          this.errorMessage = Object.values(message).flat().join(' ')
-        } else {
-          this.errorMessage = 'Unable to save leave type.'
-        }
+          this.leaveTypeErrors.name = Array.isArray(message.name)
+            ? message.name.join(' ')
+            : message.name || ''
+
+          this.leaveTypeErrors.default_days = Array.isArray(message.default_days)
+            ? message.default_days.join(' ')
+            : message.default_days || ''
+
+            if (!this.leaveTypeErrors.name && !this.leaveTypeErrors.default_days) {
+              this.errorMessage = Object.values(message).flat().join(' ')
+            }
+          } else if (Array.isArray(message)) {
+            this.errorMessage = message.join(' ')
+          } else {
+            this.errorMessage = 'Unable to save leave type.'
+          }
       } finally {
         this.leaveTypeSubmitting = false
       }
