@@ -111,10 +111,13 @@
           <div class="d-flex align-items-center gap-2">
             <select class="form-select" style="width:auto; font-size:13px;" v-model="filterType">
               <option value="all">All types</option>
-              <option value="annual">Annual</option>
-              <option value="sick">Sick</option>
-              <option value="personal">Family Responsibility</option>
-              <option value="other">Other</option>
+              <option
+                v-for="type in requestTypeOptions"
+                :key="type.id"
+                :value="String(type.id)"
+              >
+                {{ type.name }}
+              </option>
             </select>
           </div>
         </div>

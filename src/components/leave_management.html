@@ -293,7 +293,7 @@
 
                 <select class="form-select" style="width: auto; font-size: 13px;" v-model="filterType">
                   <option value="all">All types</option>
-                  <option v-for="type in leaveTypeFilterOptions" :key="type.key" :value="type.key">
+                  <option v-for="type in leaveTypeFilterOptions" :key="type.key" :value="type.name">
                     {{ type.name }}
                   </option>
                 </select>

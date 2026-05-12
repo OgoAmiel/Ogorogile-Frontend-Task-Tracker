@@ -219,22 +219,12 @@ export default {
     },
 
     requestTypeOptions() {
-      const options = []
-
-      this.leaveRequests.forEach((request) => {
-        const name = request.leave_type?.name || ''
-        const key = this.mapLeaveTypeNameToKey(name)
-
-        const exists = options.some((item) => item.key === key)
-        if (!exists && key) {
-          options.push({
-            key,
-            name,
-          })
-        }
-      })
-
-      return options
+      return this.leaveTypes
+        .filter((type) => type.is_active)
+        .map((type) => ({
+          id: type.id,
+          name: type.name,
+        }))
     },
 
     filteredLeaveRequests() {
@@ -259,29 +249,19 @@ export default {
           this.requestStatusFilter === 'all' || status === this.requestStatusFilter
 
         const matchesType =
-          this.requestTypeFilter === 'all' || typeKey === this.requestTypeFilter
+          this.requestTypeFilter === 'all' || request.leave_type?.id === this.requestTypeFilter
 
         return matchesSearch && matchesStatus && matchesType
       })
     },
 
     balanceTypeOptions() {
-      const options = []
-
-      this.leaveBalances.forEach((balance) => {
-        const name = balance.leave_type_name || ''
-        const key = this.mapLeaveTypeNameToKey(name)
-
-        const exists = options.some((item) => item.key === key)
-        if (!exists && key) {
-          options.push({
-            key,
-            name,
-          })
-        }
-      })
-
-      return options
+      return this.leaveTypes
+        .filter((type) => type.is_active)
+        .map((type) => ({
+          id: type.id,
+          name: type.name,
+        }))
     },
 
     filteredLeaveBalances() {
@@ -291,7 +271,6 @@ export default {
         const department = (balance.employee?.department || '').toLowerCase()
         const username = (balance.employee?.username || '').toLowerCase()
         const searchValue = this.balanceSearchTerm.trim().toLowerCase()
-        const typeKey = this.mapLeaveTypeNameToKey(balance.leave_type_name || '')
 
         const matchesSearch =
           !searchValue ||
@@ -302,7 +281,8 @@ export default {
           (balance.employee?.employee_number || '').toLowerCase().includes(searchValue)
 
         const matchesType =
-          this.balanceTypeFilter === 'all' || typeKey === this.balanceTypeFilter
+          this.balanceTypeFilter === 'all' ||
+          balance.leave_type_name === this.balanceTypeFilter
 
         return matchesSearch && matchesType
       })
@@ -332,6 +312,7 @@ export default {
         await Promise.all([
           this.fetchCurrentUser(),
           this.fetchUsers(),
+          this.fetchLeaveTypes(),
         ])
       } catch (error) {
         console.error('Admin page load error:', error)
@@ -349,8 +330,14 @@ export default {
       if (tab === 'leave_types') {
         await this.fetchLeaveTypes()
       } else if (tab === 'leave_requests') {
+        if (!this.leaveTypes.length) {
+          await this.fetchLeaveTypes()
+        }
         await this.fetchAllLeaveRequests()
       } else if (tab === 'leave_balances') {
+        if (!this.leaveTypes.length) {
+          await this.fetchLeaveTypes()
+        }
         await this.fetchLeaveBalances()
       } else {
         await this.fetchUsers()

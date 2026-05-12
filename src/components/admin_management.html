@@ -316,8 +316,8 @@
                     <option value="all">All types</option>
                     <option
                       v-for="type in requestTypeOptions"
-                      :key="type.key"
-                      :value="type.key"
+                      :key="type.id"
+                      :value="type.id"
                     >
                       {{ type.name }}
                     </option>
@@ -592,8 +592,8 @@
                     <option value="all">All types</option>
                     <option
                       v-for="type in balanceTypeOptions"
-                      :key="type.key"
-                      :value="type.key"
+                      :key="type.id"
+                      :value="type.name"
                     >
                       {{ type.name }}
                     </option>

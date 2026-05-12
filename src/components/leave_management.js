@@ -17,6 +17,7 @@ export default {
       user: null,
       balances: [],
       requests: [],
+      leaveTypes: [],
 
       form: {
         leave_type_id: '',
@@ -85,21 +86,22 @@ export default {
     },
 
     leaveTypeOptions() {
-      return this.balances.map((balance) => ({
-        id: balance.leave_type,
-        name: balance.leave_type_name,
-        key: this.mapLeaveTypeNameToKey(balance.leave_type_name),
-      }))
+      return this.leaveTypes
+        .filter((type) => type.is_active)
+        .map((type) => ({
+          id: type.id,
+          name: type.name,
+          key: this.mapLeaveTypeNameToKey(type.name),
+        }))
     },
 
     leaveTypeFilterOptions() {
-      const map = new Map()
-
-      this.leaveTypeOptions.forEach((type) => {
-        map.set(type.key, { key: type.key, name: type.name })
-      })
-
-      return Array.from(map.values())
+      return this.leaveTypes
+        .filter((type) => type.is_active)
+        .map((type) => ({
+          key: type.id,
+          name: type.name,
+        }))
     },
 
     computedDurationLabel() {
@@ -140,7 +142,7 @@ export default {
     filteredRequests() {
       return this.mappedRequests.filter((request) => {
         const matchStatus = this.filterStatus === 'all' || request.status === this.filterStatus
-        const matchType = this.filterType === 'all' || request.typeKey === this.filterType
+        const matchType = this.filterType === 'all' || request.type === this.filterType
         return matchStatus && matchType
       })
     },
@@ -166,6 +168,7 @@ export default {
       try {
         await Promise.all([
           this.fetchCurrentUser(),
+          this.fetchLeaveTypes(),
           this.fetchLeaveBalances(),
           this.fetchLeaveRequests(),
         ])
@@ -204,6 +207,17 @@ export default {
       )
 
       this.balances = response.data.data || []
+    },
+
+    async fetchLeaveTypes() {
+      const response = await axios.get(
+        `${import.meta.env.VITE_BACKEND_API_URL}/leave_management/get_leave_types/`,
+        {
+          headers: this.getAuthHeaders(),
+        }
+      )
+
+      this.leaveTypes = response.data.data || []
     },
 
     async fetchLeaveRequests() {

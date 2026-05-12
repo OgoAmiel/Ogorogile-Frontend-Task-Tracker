@@ -8,6 +8,7 @@ export default {
     return {
       user: null,
       requests: [],
+      leaveTypes: [],
       loading: true,
       filterType: 'all',
       errorMessage: '',
@@ -41,11 +42,23 @@ export default {
       return `${first}${last}`.trim().toUpperCase() || fallback.toUpperCase()
     },
 
+    requestTypeOptions() {
+      return this.leaveTypes
+        .filter((type) => type.is_active)
+        .map((type) => ({
+          id: type.id,
+          name: type.name,
+        }))
+    },
+
     filteredRequests() {
       return this.requests
         .filter((request) => {
-          const typeKey = this.mapLeaveTypeNameToKey(request.leave_type?.name || '')
-          return this.filterType === 'all' || typeKey === this.filterType
+          const requestTypeId = request.leave_type?.id
+          return (
+            this.filterType === 'all' ||
+            String(requestTypeId) === String(this.filterType)
+          )
         })
         .map((request) => ({
           ...request,
@@ -101,6 +114,7 @@ export default {
   async mounted() {
     await Promise.all([
       this.fetchCurrentUser(),
+      this.fetchLeaveTypes(),
       this.fetchManagedRequests(),
     ])
   },
@@ -162,6 +176,23 @@ export default {
       }
     },
 
+    async fetchLeaveTypes() {
+      try {
+        const response = await axios.get(
+          `${import.meta.env.VITE_BACKEND_API_URL}/leave_management/get_leave_types/`,
+          {
+            headers: this.getAuthHeaders(),
+          }
+        )
+
+        if (response.data.status === 'success') {
+          this.leaveTypes = response.data.data || []
+        }
+      } catch (error) {
+        console.error('Fetch leave types error:', error)
+      }
+    },
+
     async fetchManagedRequests() {
       this.loading = true
       this.errorMessage = ''
@@ -199,6 +230,11 @@ export default {
       this.filterType = 'all'
       this.successMessage = ''
       this.errorMessage = ''
+
+      if (!this.leaveTypes.length) {
+        await this.fetchLeaveTypes()
+      }
+
       await this.fetchManagedRequests()
     },
 
