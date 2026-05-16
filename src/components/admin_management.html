@@ -686,9 +686,14 @@
               v-model="userForm.username"
               type="text"
               class="form-control"
+              :class="{ 'is-invalid': userFormErrors.username }"
               :disabled="formMode === 'edit'"
               placeholder="Enter username"
+              @input="clearUserFormError('username')"
             />
+            <div v-if="userFormErrors.username" class="invalid-feedback">
+              {{ userFormErrors.username }}
+            </div>
           </div>
 
           <div class="row g-3 mb-3">
@@ -698,8 +703,12 @@
                 v-model="userForm.first_name"
                 type="text"
                 class="form-control"
+                :class="{ 'is-invalid': userFormErrors.first_name }"
                 placeholder="First name"
               />
+              <div v-if="userFormErrors.first_name" class="invalid-feedback">
+                {{ userFormErrors.first_name }}
+              </div>
             </div>
 
             <div class="col-6">
@@ -708,8 +717,12 @@
                 v-model="userForm.last_name"
                 type="text"
                 class="form-control"
+                :class="{ 'is-invalid': userFormErrors.last_name }"
                 placeholder="Last name"
               />
+              <div v-if="userFormErrors.last_name" class="invalid-feedback">
+                {{ userFormErrors.last_name }}
+              </div>
             </div>
           </div>
 
@@ -719,8 +732,12 @@
               v-model="userForm.email"
               type="email"
               class="form-control"
+              :class="{ 'is-invalid': userFormErrors.email }"
               placeholder="Enter email address"
             />
+            <div v-if="userFormErrors.email" class="invalid-feedback">
+              {{ userFormErrors.email }}
+            </div>
           </div>
 
           <div class="mb-3" v-if="formMode === 'create'">
@@ -729,8 +746,12 @@
               v-model="userForm.password"
               type="password"
               class="form-control"
+              :class="{ 'is-invalid': userFormErrors.password }"
               placeholder="Temporary password"
             />
+            <div v-if="userFormErrors.password" class="invalid-feedback">
+              {{ userFormErrors.password }}
+            </div>
           </div>
 
           <div class="mb-3">
@@ -749,8 +770,12 @@
                 v-model="userForm.employee_number"
                 type="text"
                 class="form-control"
+                :class="{ 'is-invalid': userFormErrors.employee_number }"
                 placeholder="Employee number"
               />
+              <div v-if="userFormErrors.employee_number" class="invalid-feedback">
+                {{ userFormErrors.employee_number }}
+              </div>
             </div>
 
             <div class="col-6">
@@ -759,8 +784,12 @@
                 v-model="userForm.department"
                 type="text"
                 class="form-control"
+                :class="{ 'is-invalid': userFormErrors.department }"
                 placeholder="Department"
               />
+              <div v-if="userFormErrors.department" class="invalid-feedback">
+                {{ userFormErrors.department }}
+              </div>
             </div>
           </div>
 

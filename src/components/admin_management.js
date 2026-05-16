@@ -55,6 +55,16 @@ export default {
         department: '',
         manager_id: '',
       },
+      userFormErrors: {
+        username: '',
+        first_name: '',
+        last_name: '',
+        email: '',
+        password: '',
+        employee_number: '',
+        department: '',
+        manager_id: '',
+      },
 
       leaveTypeForm: {
         leave_type_id: null,
@@ -501,6 +511,7 @@ export default {
       this.errorMessage = ''
       this.successMessage = ''
       this.resetForm()
+      this.resetUserFormErrors()
       this.isUserModalOpen = true
     },
 
@@ -508,6 +519,7 @@ export default {
       this.formMode = 'edit'
       this.errorMessage = ''
       this.successMessage = ''
+      this.resetUserFormErrors()
       this.isUserModalOpen = true
 
       this.userForm = {
@@ -537,40 +549,125 @@ export default {
         department: '',
         manager_id: '',
       }
+      this.resetUserFormErrors()
     },
 
     handleRoleChange() {
       if (this.userForm.role !== 'EMPLOYEE') {
         this.userForm.manager_id = ''
+        this.clearUserFormError('manager_id')
       }
     },
 
     validateForm() {
-      if (!this.userForm.first_name.trim()) {
-        return 'First name is required.'
+      this.resetUserFormErrors()
+
+      let isValid = true
+
+      const username = this.userForm.username.trim()
+      const firstName = this.userForm.first_name.trim()
+      const lastName = this.userForm.last_name.trim()
+      const email = this.userForm.email.trim()
+      const password = this.userForm.password
+      const employeeNumber = this.userForm.employee_number
+        ? this.userForm.employee_number.trim()
+        : ''
+      const department = this.userForm.department.trim()
+
+      if (this.formMode === 'create' && !username) {
+        this.userFormErrors.username = 'Username is required.'
+        isValid = false
       }
 
-      if (!this.userForm.last_name.trim()) {
-        return 'Last name is required.'
+      if (!firstName) {
+        this.userFormErrors.first_name = 'First name is required.'
+        isValid = false
       }
 
-      if (!this.userForm.email.trim()) {
-        return 'Email is required.'
+      if (!lastName) {
+        this.userFormErrors.last_name = 'Last name is required.'
+        isValid = false
       }
 
-      if (this.formMode === 'create' && !this.userForm.username.trim()) {
-        return 'Username is required.'
+      if (!email) {
+        this.userFormErrors.email = 'Email is required.'
+        isValid = false
+      } else if (!this.isValidEmail(email)) {
+        this.userFormErrors.email = 'Enter a valid email address.'
+        isValid = false
       }
 
-      if (this.formMode === 'create' && !this.userForm.password) {
-        return 'Password is required.'
+      if (this.formMode === 'create' && !password) {
+        this.userFormErrors.password = 'Password is required.'
+        isValid = false
+      }
+
+      if (!employeeNumber) {
+        this.userFormErrors.employee_number = 'Employee number is required.'
+        isValid = false
+      }
+
+      if (!department) {
+        this.userFormErrors.department = 'Department is required.'
+        isValid = false
       }
 
       if (this.userForm.role === 'EMPLOYEE' && !this.userForm.manager_id) {
-        return 'Employees must be assigned to a manager.'
+        this.userFormErrors.manager_id = 'Employees must be assigned to a manager.'
+        isValid = false
       }
 
-      return ''
+      const duplicateUsername = this.users.find((userItem) => {
+        if (this.formMode === 'edit' && userItem.id === this.userForm.user_id) {
+          return false
+        }
+        return (userItem.username || '').trim().toLowerCase() === username.toLowerCase()
+      })
+
+      if (this.formMode === 'create' && duplicateUsername) {
+        this.userFormErrors.username = 'A user with this username already exists.'
+        isValid = false
+      }
+
+      const duplicateEmployeeNumber = this.users.find((userItem) => {
+        if (!employeeNumber) {
+          return false
+        }
+
+        if (this.formMode === 'edit' && userItem.id === this.userForm.user_id) {
+          return false
+        }
+
+        return (userItem.employee_number || '').trim().toLowerCase() === employeeNumber.toLowerCase()
+      })
+
+      if (duplicateEmployeeNumber) {
+        this.userFormErrors.employee_number = 'A user with this employee number already exists.'
+        isValid = false
+      }
+      return isValid
+    },
+
+    resetUserFormErrors() {
+      this.userFormErrors = {
+        username: '',
+        first_name: '',
+        last_name: '',
+        email: '',
+        password: '',
+        employee_number: '',
+        department: '',
+        manager_id: '',
+      }
+    },
+
+    clearUserFormError(fieldName) {
+      this.userFormErrors[fieldName] = ''
+      this.errorMessage = ''
+    },
+
+    isValidEmail(email) {
+      return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)
     },
 
     buildCreatePayload() {
@@ -581,7 +678,7 @@ export default {
         email: this.userForm.email.trim(),
         password: this.userForm.password,
         role: this.userForm.role,
-        employee_number: this.userForm.employee_number ? this.userForm.employee_number.trim() : null,
+        employee_number: this.userForm.employee_number.trim(),
         department: this.userForm.department.trim(),
         manager_id: this.userForm.role === 'EMPLOYEE' && this.userForm.manager_id
           ? Number(this.userForm.manager_id)
@@ -596,7 +693,7 @@ export default {
         last_name: this.userForm.last_name.trim(),
         email: this.userForm.email.trim(),
         role: this.userForm.role,
-        employee_number: this.userForm.employee_number ? this.userForm.employee_number.trim() : null,
+        employee_number: this.userForm.employee_number.trim(),
         department: this.userForm.department.trim(),
         manager_id: this.userForm.role === 'EMPLOYEE' && this.userForm.manager_id
           ? Number(this.userForm.manager_id)
@@ -633,10 +730,9 @@ export default {
         return
       }
 
-      const validationMessage = this.validateForm()
+      const isValid = this.validateForm()
 
-      if (validationMessage) {
-        this.errorMessage = validationMessage
+      if (!isValid) {
         this.successMessage = ''
         return
       }
@@ -668,11 +764,64 @@ export default {
         const message = error?.response?.data?.message
 
         if (typeof message === 'string') {
-          this.errorMessage = message
+          const lowerMessage = message.toLowerCase()
+
+          if (lowerMessage.includes('username')) {
+            this.userFormErrors.username = message
+          } else if (lowerMessage.includes('employee number')) {
+            this.userFormErrors.employee_number = message
+          } else if (lowerMessage.includes('email')) {
+            this.userFormErrors.email = message
+          } else {
+            this.errorMessage = message
+          }
+
+        } else if (typeof message === 'object' && message !== null) {
+          this.userFormErrors.username = Array.isArray(message.username)
+            ? message.username.join(' ')
+            : message.username || ''
+
+          this.userFormErrors.first_name = Array.isArray(message.first_name)
+            ? message.first_name.join(' ')
+            : message.first_name || ''
+
+          this.userFormErrors.last_name = Array.isArray(message.last_name)
+            ? message.last_name.join(' ')
+            : message.last_name || ''
+
+          this.userFormErrors.email = Array.isArray(message.email)
+            ? message.email.join(' ')
+            : message.email || ''
+
+          this.userFormErrors.password = Array.isArray(message.password)
+            ? message.password.join(' ')
+            : message.password || ''
+
+          this.userFormErrors.employee_number = Array.isArray(message.employee_number)
+            ? message.employee_number.join(' ')
+            : message.employee_number || ''
+
+          this.userFormErrors.department = Array.isArray(message.department)
+            ? message.department.join(' ')
+            : message.department || ''
+
+          this.userFormErrors.manager_id = Array.isArray(message.manager_id)
+            ? message.manager_id.join(' ')
+            : message.manager_id || ''
+
+          if (message.manager && !this.userFormErrors.manager_id) {
+            this.userFormErrors.manager_id = Array.isArray(message.manager)
+            ? message.manager.join(' ')
+            : message.manager
+          }
+
+          const hasInlineError = Object.values(this.userFormErrors).some((value) => !!value)
+
+          if (!hasInlineError) {
+            this.errorMessage = Object.values(message).flat().join(' ')
+          }
         } else if (Array.isArray(message)) {
           this.errorMessage = message.join(' ')
-        } else if (typeof message === 'object' && message !== null) {
-          this.errorMessage = Object.values(message).flat().join(' ')
         } else {
           this.errorMessage = 'Unable to save user.'
         }
